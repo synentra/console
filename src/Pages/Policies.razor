@@ -1,0 +1,124 @@
+@page "/policies"
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Policies</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Policies</MudText>
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Browse policy catalog and inspect detailed rule definitions.</MudText>
+
+<MudGrid>
+    <MudItem xs="12" lg="6">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Policy List</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadPoliciesAsync" Disabled="_busy">Refresh</MudButton>
+            </MudStack>
+
+            <MudTable Items="_policies" Dense="true" Hover="true" Loading="_busy">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Owner</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.PolicyName</MudTd>
+                    <MudTd>@context.Owner</MudTd>
+                    <MudTd>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => LoadPolicyDetailsAsync(context.PolicyName))">Details</MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" lg="6">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-3">Policy Details</MudText>
+
+            @if (_selectedPolicy is null)
+            {
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">Select a policy to load details.</MudText>
+            }
+            else
+            {
+                <MudStack Spacing="1">
+                    <MudText><b>Name:</b> @_selectedPolicy.Name</MudText>
+                    <MudText><b>Owner:</b> @_selectedPolicy.Owner</MudText>
+                    <MudText><b>Description:</b> @_selectedPolicy.Description</MudText>
+                    <MudText><b>Default:</b> @_selectedPolicy.Default</MudText>
+                    <MudText><b>Created On:</b> @_selectedPolicy.CreatedOn?.ToString("u")</MudText>
+                </MudStack>
+
+                <MudDivider Class="my-3" />
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Rules (@_selectedPolicy.Rules.Count)</MudText>
+                <MudTable Items="_selectedPolicy.Rules" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Action</MudTh>
+                        <MudTh>Priority</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Name</MudTd>
+                        <MudTd>@context.Action</MudTd>
+                        <MudTd>@context.Priority</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly List<PolicySummary> _policies = [];
+    private PolicyDetails? _selectedPolicy;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPoliciesAsync();
+    }
+
+    private async Task LoadPoliciesAsync()
+    {
+        _busy = true;
+        try
+        {
+            var response = await Api.GetPoliciesAsync(1, 100);
+            _policies.Clear();
+            if (response is not null)
+            {
+                _policies.AddRange(response.Items);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load policies: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadPolicyDetailsAsync(string policyName)
+    {
+        _busy = true;
+        try
+        {
+            _selectedPolicy = await Api.GetPolicyAsync(policyName);
+            if (_selectedPolicy is null)
+            {
+                Snackbar.Add("Policy detail response was empty.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load policy details: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

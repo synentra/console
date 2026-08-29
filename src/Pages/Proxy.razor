@@ -1,0 +1,120 @@
+@page "/proxy"
+@using System.Text.Json
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Proxy</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Proxy Request Lab</MudText>
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Call <code>/proxy/&lt;full-upstream-url&gt;</code> with custom method, body, and headers.</MudText>
+
+<MudGrid>
+    <MudItem xs="12" lg="6">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudSelect T="string" Label="Method" Variant="Variant.Outlined" @bind-Value="_request.Method" Class="mb-2">
+                @foreach (var method in _methods)
+                {
+                    <MudSelectItem Value="@method">@method</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudTextField Label="Target URL" Variant="Variant.Outlined" @bind-Value="_request.TargetUrl" Placeholder="https://api.example.com/users/123" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Content-Type" Variant="Variant.Outlined" @bind-Value="_request.ContentType" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Additional Headers (JSON object)" Variant="Variant.Outlined" @bind-Value="_headersJson" Lines="4" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Body" Variant="Variant.Outlined" @bind-Value="_request.JsonBody" Lines="8" FullWidth="true" Class="mb-3" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Send" OnClick="SendAsync" Disabled="_busy">
+                @(_busy ? "Sending..." : "Send Proxy Request")
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" lg="6">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-2">Response</MudText>
+
+            @if (_result is null)
+            {
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">No proxy call executed yet.</MudText>
+            }
+            else
+            {
+                <MudStack Row="true" Spacing="1" Class="mb-2">
+                    <MudChip T="int" Color="@(_result.IsSuccessStatusCode ? Color.Success : Color.Error)">@_result.StatusCode</MudChip>
+                    <MudChip T="string" Variant="Variant.Outlined">@_result.ReasonPhrase</MudChip>
+                </MudStack>
+
+                <MudText Typo="Typo.subtitle2" Class="mb-1">Headers</MudText>
+                <MudTable Items="_result.Headers" Dense="true" Elevation="0" Class="mb-3">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Value</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Key</MudTd>
+                        <MudTd>@context.Value</MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudText Typo="Typo.subtitle2" Class="mb-1">Body</MudText>
+                <MudTextField Value="_result.Body" Variant="Variant.Outlined" Lines="12" ReadOnly="true" FullWidth="true" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private static readonly string[] _methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+
+    private readonly ProxyCallRequest _request = new();
+    private ApiCallResult? _result;
+    private string _headersJson = "{}";
+    private bool _busy;
+
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_request.TargetUrl))
+        {
+            Snackbar.Add("Target URL is required.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _request.Headers = ParseHeaders(_headersJson);
+            _result = await Api.SendProxyRequestAsync(_request);
+            Snackbar.Add(_result.IsSuccessStatusCode ? "Proxy request completed." : _result.ErrorMessage ?? "Proxy request failed.", _result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Proxy request failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static Dictionary<string, string> ParseHeaders(string headersJson)
+    {
+        if (string.IsNullOrWhiteSpace(headersJson))
+        {
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(headersJson);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            return [];
+        }
+
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in document.RootElement.EnumerateObject())
+        {
+            headers[property.Name] = property.Value.ToString();
+        }
+
+        return headers;
+    }
+}

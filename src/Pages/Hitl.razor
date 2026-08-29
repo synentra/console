@@ -1,0 +1,170 @@
+@page "/hitl"
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>HITL</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Human-in-the-Loop Queue</MudText>
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Review pending high-risk requests and approve or deny with operator comments.</MudText>
+
+<MudGrid>
+    <MudItem xs="12" lg="7">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Pending Requests</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadPendingAsync" Disabled="_busy">Refresh</MudButton>
+            </MudStack>
+
+            <MudTable Items="_pending" Dense="true" Hover="true" Loading="_busy">
+                <HeaderContent>
+                    <MudTh>Method</MudTh>
+                    <MudTh>Target</MudTh>
+                    <MudTh>Reason</MudTh>
+                    <MudTh>Expires</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@context.Method</MudChip></MudTd>
+                    <MudTd>@context.Url</MudTd>
+                    <MudTd>@context.Reason</MudTd>
+                    <MudTd>@context.ExpiresAt.LocalDateTime.ToString("g")</MudTd>
+                    <MudTd>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => SelectRequestAsync(context.Id))">Open</MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" lg="5">
+        <MudPaper Class="pa-4 glass-panel" Elevation="0">
+            <MudText Typo="Typo.h6" Class="mb-3">Request Actions</MudText>
+            <MudTextField Label="Request ID" Variant="Variant.Outlined" @bind-Value="_requestId" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Comment (optional)" Variant="Variant.Outlined" @bind-Value="_comment" FullWidth="true" Lines="3" Class="mb-3" />
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Rounded.Check" OnClick="ApproveAsync" Disabled="_busy">Approve</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Rounded.Close" OnClick="DenyAsync" Disabled="_busy">Deny</MudButton>
+            </MudStack>
+
+            @if (_selectedStatus is not null)
+            {
+                <MudDivider Class="my-3" />
+                <MudText Typo="Typo.subtitle2">Status: @_selectedStatus.Status</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Method: @_selectedStatus.Request?.Method</MudText><br />
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">URL: @_selectedStatus.Request?.Url</MudText><br />
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Reason: @_selectedStatus.Request?.Reason</MudText>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_lastDecisionBody))
+            {
+                <MudDivider Class="my-3" />
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Last Decision Response</MudText>
+                <MudTextField Value="_lastDecisionBody" Variant="Variant.Outlined" Lines="6" ReadOnly="true" FullWidth="true" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly List<HitlPendingItem> _pending = [];
+    private string _requestId = string.Empty;
+    private string _comment = string.Empty;
+    private string _lastDecisionBody = string.Empty;
+    private HitlStatusResponse? _selectedStatus;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPendingAsync();
+    }
+
+    private async Task LoadPendingAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Api.GetPendingHitlAsync();
+            _pending.Clear();
+            if (result is not null)
+            {
+                _pending.AddRange(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load HITL queue: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SelectRequestAsync(string id)
+    {
+        _requestId = id;
+        _busy = true;
+        try
+        {
+            _selectedStatus = await Api.GetHitlStatusAsync(id);
+            if (_selectedStatus is null)
+            {
+                Snackbar.Add("No status returned for request.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load request status: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApproveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_requestId))
+        {
+            Snackbar.Add("Enter a request ID.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.ApproveHitlAsync(_requestId, new HitlDecisionRequest { Comment = _comment });
+            _lastDecisionBody = result.Body;
+            Snackbar.Add(result.IsSuccessStatusCode ? "Request approved." : result.ErrorMessage ?? "Approve failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            await SelectRequestAsync(_requestId);
+            await LoadPendingAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DenyAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_requestId))
+        {
+            Snackbar.Add("Enter a request ID.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.DenyHitlAsync(_requestId, new HitlDecisionRequest { Comment = _comment });
+            _lastDecisionBody = result.Body;
+            Snackbar.Add(result.IsSuccessStatusCode ? "Request denied." : result.ErrorMessage ?? "Deny failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            await SelectRequestAsync(_requestId);
+            await LoadPendingAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

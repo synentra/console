@@ -1,0 +1,246 @@
+/* ============================================================
+   CSS Variables – design tokens
+   ============================================================ */
+:root {
+    /* Primary palette */
+    --color-primary: #2563eb;
+    --color-primary-light: #3b82f6;
+    --color-primary-dark: #1d4ed8;
+    --color-secondary: #7c3aed;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    /* Neutral shades */
+    --color-bg: #f1f5f9; /* page background */
+    --color-surface: #ffffff; /* cards, panels */
+    --color-surface-soft: #f8fafc;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #475569;
+    --color-text-muted: #94a3b8;
+    --color-border: #e2e8f0;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+    --shadow-xl: 0 12px 48px rgba(0,0,0,0.12);
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    /* Transitions */
+    --ease-standard: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--ease-standard);
+}
+
+    a:hover {
+        color: var(--color-primary-dark);
+    }
+
+code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    background: var(--color-surface-soft);
+    padding: 0.2em 0.4em;
+    border-radius: var(--radius-sm);
+    color: var(--color-primary-dark);
+}
+
+/* ============================================================
+   Glass Panel (cards & surfaces)
+   ============================================================ */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--ease-standard), transform var(--ease-standard);
+}
+
+    .glass-panel:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+/* Dark theme override for glass-panel */
+.mud-theme-dark .glass-panel {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   MudBlazor Component Overrides
+   ============================================================ */
+/* Buttons – more rounded, softer */
+.mud-button {
+    border-radius: var(--radius-md) !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0.01em;
+}
+
+/* Inputs – cleaner outline */
+.mud-input-outlined {
+    border-radius: var(--radius-md) !important;
+}
+
+    .mud-input-outlined .mud-input-outlined-border {
+        border-color: var(--color-border) !important;
+    }
+
+    .mud-input-outlined:focus-within .mud-input-outlined-border {
+        border-color: var(--color-primary) !important;
+    }
+
+/* Tables – borderless, minimal */
+.mud-table {
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: none !important;
+}
+
+.mud-table-head {
+    background: var(--color-surface-soft) !important;
+    border-bottom: 2px solid var(--color-border) !important;
+}
+
+.mud-table-row {
+    border-bottom: 1px solid var(--color-border) !important;
+    transition: background var(--ease-standard);
+}
+
+    .mud-table-row:hover {
+        background: rgba(37, 99, 235, 0.04) !important;
+    }
+
+/* Chips – softer, with subtle border */
+.mud-chip {
+    border-radius: var(--radius-sm) !important;
+    font-weight: 500 !important;
+}
+
+/* Paper – remove extra shadows, use glass-panel instead */
+.mud-paper {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* ============================================================
+   Dark Theme Overrides (applied via .mud-theme-dark)
+   ============================================================ */
+.mud-theme-dark {
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-surface-soft: #1e293b;
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #64748b;
+    --color-border: #334155;
+}
+
+    .mud-theme-dark .glass-panel {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .mud-theme-dark .mud-table-head {
+        background: #1e293b !important;
+        border-bottom-color: #334155 !important;
+    }
+
+    .mud-theme-dark .mud-table-row {
+        border-bottom-color: #334155 !important;
+    }
+
+        .mud-theme-dark .mud-table-row:hover {
+            background: rgba(37, 99, 235, 0.12) !important;
+        }
+
+    .mud-theme-dark .mud-input-outlined .mud-input-outlined-border {
+        border-color: #334155 !important;
+    }
+
+    .mud-theme-dark .mud-input-outlined:focus-within .mud-input-outlined-border {
+        border-color: var(--color-primary-light) !important;
+    }
+
+/* ============================================================
+   Utility helpers
+   ============================================================ */
+.text-muted {
+    color: var(--color-text-secondary);
+}
+
+.text-muted-light {
+    color: var(--color-text-muted);
+}
+
+.mb-1 {
+    margin-bottom: 0.25rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+    margin-top: 0.25rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}

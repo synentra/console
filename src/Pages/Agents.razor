@@ -1,0 +1,166 @@
+@page "/agents"
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Agents</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Agents</MudText>
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Manage agent lifecycle, policies, and quarantine.</MudText>
+
+<MudCard Elevation="0" Class="glass-panel pa-4">
+    <MudTabs Elevation="0" Rounded="true" Centered="false" Class="mb-4">
+        <MudTabPanel Text="Agent List" Icon="@Icons.Material.Filled.List">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Registered Agents</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadAgentsAsync" Disabled="_busy">Refresh</MudButton>
+            </MudStack>
+            <MudTable Items="_agents" Hover="true" Dense="true" Loading="_busy" Elevation="0">
+                <!-- same as before -->
+            </MudTable>
+            <MudStack Row="true" Class="mt-3" AlignItems="AlignItems.Center" Spacing="1">
+                <!-- pagination controls -->
+            </MudStack>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Register" Icon="@Icons.Material.Filled.PersonAdd">
+            <MudText Typo="Typo.h6" Class="mb-3">Register New Agent</MudText>
+            <MudTextField Label="Name" Variant="Variant.Outlined" @bind-Value="_register.Name" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Owner ID" Variant="Variant.Outlined" @bind-Value="_register.OwnerId" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Client Secret" Variant="Variant.Outlined" @bind-Value="_register.ClientSecret" InputType="InputType.Password" FullWidth="true" Class="mb-3" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="RegisterAsync" Disabled="_busy">Create Agent</MudButton>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Assign Policy" Icon="@Icons.Material.Filled.Policy">
+            <MudText Typo="Typo.h6" Class="mb-3">Assign Policy to Agent</MudText>
+            <MudTextField Label="Agent ID" Variant="Variant.Outlined" @bind-Value="_assignAgentId" FullWidth="true" Class="mb-2" />
+            <MudTextField Label="Policy Name" Variant="Variant.Outlined" @bind-Value="_assignPolicyName" FullWidth="true" Class="mb-3" />
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Policy" OnClick="AssignPolicyAsync" Disabled="_busy">Assign Policy</MudButton>
+        </MudTabPanel>
+    </MudTabs>
+</MudCard>
+
+@code {
+    private readonly RegisterAgentRequest _register = new();
+    private readonly List<AgentSummary> _agents = [];
+    private string _assignAgentId = string.Empty;
+    private string _assignPolicyName = string.Empty;
+    private int _page = 1;
+    private int _pageSize = 25;
+    private int _totalCount;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAgentsAsync();
+    }
+
+    private async Task LoadAgentsAsync()
+    {
+        _busy = true;
+        try
+        {
+            var response = await Api.GetAgentsAsync(_page, _pageSize);
+            _agents.Clear();
+            if (response is not null)
+            {
+                _agents.AddRange(response.Items);
+                _totalCount = response.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load agents: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RegisterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_register.Name) || string.IsNullOrWhiteSpace(_register.OwnerId) || string.IsNullOrWhiteSpace(_register.ClientSecret))
+        {
+            Snackbar.Add("Name, owner ID, and client secret are required.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.RegisterAgentAsync(_register);
+            Snackbar.Add(result.IsSuccessStatusCode ? "Agent created." : result.ErrorMessage ?? "Agent creation failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            if (result.IsSuccessStatusCode)
+            {
+                _register.Name = string.Empty;
+                _register.OwnerId = string.Empty;
+                _register.ClientSecret = string.Empty;
+                await LoadAgentsAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task AssignPolicyAsync()
+    {
+        if (!Guid.TryParse(_assignAgentId, out var agentId) || string.IsNullOrWhiteSpace(_assignPolicyName))
+        {
+            Snackbar.Add("Provide valid agent ID and policy name.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.AssignPolicyAsync(agentId, new AssignPolicyRequest { PolicyName = _assignPolicyName });
+            Snackbar.Add(result.IsSuccessStatusCode ? "Policy assigned." : result.ErrorMessage ?? "Assignment failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            if (result.IsSuccessStatusCode)
+            {
+                await LoadAgentsAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LiftQuarantineAsync(Guid agentId)
+    {
+        _busy = true;
+        try
+        {
+            var result = await Api.LiftQuarantineAsync(agentId);
+            Snackbar.Add(result.IsSuccessStatusCode ? "Quarantine lifted." : result.ErrorMessage ?? "Operation failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            if (result.IsSuccessStatusCode)
+            {
+                await LoadAgentsAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteAsync(Guid agentId)
+    {
+        _busy = true;
+        try
+        {
+            var result = await Api.DeleteAgentAsync(agentId);
+            Snackbar.Add(result.IsSuccessStatusCode ? "Agent deleted." : result.ErrorMessage ?? "Delete failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+            if (result.IsSuccessStatusCode)
+            {
+                await LoadAgentsAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

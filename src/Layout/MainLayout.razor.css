@@ -1,0 +1,70 @@
+/* ============================================================
+   AppBar (top navigation)
+   ============================================================ */
+.console-appbar {
+    min-height: 64px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow-sm);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: background var(--ease-standard), box-shadow var(--ease-standard);
+}
+
+    .console-appbar .mud-typography-h6 {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+.console-subtitle {
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   Drawer (sidebar)
+   ============================================================ */
+.console-drawer {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    width: 280px;
+    padding-top: 1rem;
+}
+
+.drawer-brand {
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 1.25rem;
+    padding: 0 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+    .drawer-brand .mud-icon {
+        color: var(--color-primary-light);
+    }
+
+/* ============================================================
+   Main content area
+   ============================================================ */
+.console-main {
+    flex: 1;
+    padding: 1.75rem 2rem 2.5rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ============================================================
+   Dark theme overrides for appbar
+   ============================================================ */
+.mud-theme-dark .console-appbar {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}

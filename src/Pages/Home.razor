@@ -1,0 +1,121 @@
+﻿@page "/"
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+@inject ConsoleState ConsoleState
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudGrid Spacing="2">
+    <MudItem xs="12">
+        <MudText Typo="Typo.h4" Class="fw-semibold">Dashboard</MudText>
+        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Overview of your Synentra gateway</MudText>
+    </MudItem>
+
+    <!-- Metric Cards -->
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="0" Class="glass-panel pa-3">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Agents</MudText>
+            <MudText Typo="Typo.h4">@_agentCount</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.SmartToy" Color="Color.Primary" Size="Size.Small" />
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="0" Class="glass-panel pa-3">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Pending HITL</MudText>
+            <MudText Typo="Typo.h4">@_pendingHitl</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Warning" Size="Size.Small" />
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="0" Class="glass-panel pa-3">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Policies</MudText>
+            <MudText Typo="Typo.h4">@_policyCount</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Policy" Color="Color.Secondary" Size="Size.Small" />
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="0" Class="glass-panel pa-3">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">System Status</MudText>
+            <MudChip T="string" Color="@(_healthStatus == "Healthy" ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">@_healthStatus</MudChip>
+            <MudIconButton Icon="@Icons.Material.Filled.MonitorHeart" Color="Color.Info" Size="Size.Small" />
+        </MudCard>
+    </MudItem>
+
+    <!-- Quick Actions -->
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="0" Class="glass-panel pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Quick Actions</MudText>
+            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.VpnKey" Href="/tokens">Issue Token</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SmartToy" Href="/agents">Manage Agents</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.VerifiedUser" Href="/hitl">Review HITL</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.TravelExplore" Href="/proxy">Proxy Test</MudButton>
+            </MudStack>
+        </MudCard>
+    </MudItem>
+
+    <!-- Recent Audit Entries -->
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="0" Class="glass-panel pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                <MudText Typo="Typo.h6">Recent Audit</MudText>
+                <MudLink Href="/audit" Typo="Typo.body2">View all</MudLink>
+            </MudStack>
+            <MudTable Items="_recentAudit" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Action</MudTh>
+                    <MudTh>Agent</MudTh>
+                    <MudTh>Time</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Action</MudTd>
+                    <MudTd>@context.AgentId</MudTd>
+                    <MudTd>@context.Timestamp?.LocalDateTime.ToString("g")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private int _agentCount = 0;
+    private int _pendingHitl = 0;
+    private int _policyCount = 0;
+    private string _healthStatus = "Unknown";
+    private List<AuditEntry> _recentAudit = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Agents count: fetch first page with pageSize=1 to get total
+            var agents = await Api.GetAgentsAsync(1, 1);
+            _agentCount = agents?.TotalCount ?? 0;
+
+            // Pending HITL
+            var hitl = await Api.GetPendingHitlAsync();
+            _pendingHitl = hitl?.Count ?? 0;
+
+            // Policies count
+            var policies = await Api.GetPoliciesAsync(1, 1);
+            _policyCount = policies?.TotalCount ?? 0;
+
+            // Health
+            var health = await Api.GetHealthAsync();
+            _healthStatus = health?.Status ?? "Unreachable";
+
+            // Recent audit (last 5)
+            var audit = await Api.GetAuditAsync(1, 5);
+            _recentAudit = audit?.Items?.Take(5).ToList() ?? new List<AuditEntry>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading dashboard: {ex.Message}", Severity.Error);
+        }
+    }
+}

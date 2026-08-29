@@ -1,0 +1,113 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<MudThemeProvider Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
+
+<MudLayout Class="console-layout">
+    <MudAppBar Elevation="0" Color="Color.Default" Dense="true" Class="console-appbar px-4">
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" OnClick="ToggleDrawer" Color="Color.Inherit" />
+        <MudText Typo="Typo.h6" Class="ms-2 fw-semibold">Synentra Console</MudText>
+        <MudText Typo="Typo.caption" Class="ms-3 console-subtitle">Gateway Operations</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Rounded.LightMode : Icons.Material.Rounded.DarkMode)"
+                       Color="Color.Default"
+                       OnClick="ToggleThemeAsync"
+                       Title="@(_isDarkMode ? "Switch to light mode" : "Switch to dark mode")" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="0" Width="280px" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Class="console-drawer">
+        <div class="drawer-brand px-4 py-4">
+            <MudText Typo="Typo.subtitle1" Class="fw-semibold">Synentra</MudText>
+            <MudText Typo="Typo.caption" Class="console-subtitle">API Management Console</MudText>
+        </div>
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="console-main">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode;
+    private bool _themeLoaded;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2563eb",
+            Secondary = "#7c3aed",
+            Success = "#10b981",
+            Warning = "#f59e0b",
+            Error = "#ef4444",
+            AppbarBackground = "#ffffff",
+            DrawerBackground = "#0f172a",
+            DrawerText = "#e2e8f0",
+            DrawerIcon = "#94a3b8",
+            Background = "#f1f5f9",
+            Surface = "#ffffff",
+            TextPrimary = "#0f172a",
+            TextSecondary = "#475569",
+            ActionDefault = "#64748b",
+            Divider = "#e2e8f0",
+            DividerLight = "#f1f5f9",
+            TableLines = "#e2e8f0",
+            TableStriped = "#f8fafc",
+            TableHover = "rgba(37,99,235,0.04)",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#3b82f6",
+            Secondary = "#8b5cf6",
+            Success = "#34d399",
+            Warning = "#fbbf24",
+            Error = "#f87171",
+            AppbarBackground = "#1e293b",
+            DrawerBackground = "#0f172a",
+            DrawerText = "#cbd5e1",
+            DrawerIcon = "#64748b",
+            Background = "#0f172a",
+            Surface = "#1e293b",
+            TextPrimary = "#f1f5f9",
+            TextSecondary = "#cbd5e1",
+            ActionDefault = "#94a3b8",
+            Divider = "#334155",
+            DividerLight = "#1e293b",
+            TableLines = "#334155",
+            TableStriped = "#1e293b",
+            TableHover = "rgba(59,130,246,0.12)",
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "10px"
+        }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _themeLoaded)
+        {
+            return;
+        }
+
+        var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "synentra-theme");
+        _isDarkMode = string.Equals(savedTheme, "dark", StringComparison.OrdinalIgnoreCase);
+        _themeLoaded = true;
+        StateHasChanged();
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JS.InvokeVoidAsync("localStorage.setItem", "synentra-theme", _isDarkMode ? "dark" : "light");
+    }
+}

@@ -1,0 +1,68 @@
+@page "/health"
+@inject SynentraApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Health</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <div>
+        <MudText Typo="Typo.h4" Class="fw-semibold mb-1">Gateway Health</MudText>
+        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">Live liveness/readiness status from <code>/health</code>.</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadHealthAsync" Disabled="_busy">
+        @(_busy ? "Refreshing..." : "Refresh")
+    </MudButton>
+</MudStack>
+
+<MudPaper Class="pa-4 glass-panel" Elevation="0">
+    @if (_health is null)
+    {
+        <MudText Typo="Typo.body1" Class="mud-text-secondary">No health response loaded.</MudText>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Status</MudText>
+                <MudChip T="string" Color="@(_health.Status.Equals("Healthy", StringComparison.OrdinalIgnoreCase) ? Color.Success : Color.Error)" Variant="Variant.Filled" Class="mt-1">
+                    @_health.Status
+                </MudChip>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Health Check Duration</MudText>
+                <MudText Typo="Typo.h6" Class="mt-1">@_health.HealthCheckDuration</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+</MudPaper>
+
+@code {
+    private HealthResponse? _health;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHealthAsync();
+    }
+
+    private async Task LoadHealthAsync()
+    {
+        _busy = true;
+        try
+        {
+            _health = await Api.GetHealthAsync();
+            if (_health is null)
+            {
+                Snackbar.Add("Health endpoint did not return a valid payload.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Health request failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

@@ -1,0 +1,89 @@
+@page "/tokens"
+@inject SynentraApiClient Api
+@inject ConsoleState ConsoleState
+@inject ISnackbar Snackbar
+
+<PageTitle>Tokens</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Token Exchange</MudText>
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Exchange agent credentials for a JWT access token.</MudText>
+
+<MudPaper Class="pa-4 glass-panel" Elevation="0">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField Label="Agent ID" Variant="Variant.Outlined" @bind-Value="_agentId" Placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6" FullWidth="true" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField Label="Client Secret" Variant="Variant.Outlined" @bind-Value="_clientSecret" InputType="InputType.Password" FullWidth="true" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField Label="External Token" Variant="Variant.Outlined" @bind-Value="_externalToken" FullWidth="true" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Key" OnClick="IssueTokenAsync" Disabled="_busy">
+                @(_busy ? "Issuing..." : "Issue Token")
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (!string.IsNullOrWhiteSpace(_issuedToken))
+{
+    <MudPaper Class="pa-4 mt-4 glass-panel" Elevation="0">
+        <MudText Typo="Typo.h6">Issued Access Token</MudText>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">Stored in shared session state and used by protected endpoint operations.</MudText>
+        <MudTextField Value="@_issuedToken" Variant="Variant.Outlined" Lines="4" ReadOnly="true" FullWidth="true" Class="mt-3" />
+    </MudPaper>
+}
+
+@code {
+    private string _agentId = string.Empty;
+    private string _clientSecret = string.Empty;
+    private string _externalToken = string.Empty;
+    private string _issuedToken = string.Empty;
+    private bool _busy;
+
+    private async Task IssueTokenAsync()
+    {
+        if (!Guid.TryParse(_agentId, out var agentId))
+        {
+            Snackbar.Add("Enter a valid Agent ID.", Severity.Error);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_clientSecret) && string.IsNullOrWhiteSpace(_externalToken))
+        {
+            Snackbar.Add("Provide a client secret or external token.", Severity.Warning);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var token = await Api.ExchangeTokenAsync(new TokenRequest
+            {
+                AgentId = agentId,
+                ClientSecret = string.IsNullOrWhiteSpace(_clientSecret) ? null : _clientSecret,
+                ExternalToken = string.IsNullOrWhiteSpace(_externalToken) ? null : _externalToken
+            });
+
+            if (token is null || string.IsNullOrWhiteSpace(token.AccessToken))
+            {
+                Snackbar.Add("Token exchange failed.", Severity.Error);
+                return;
+            }
+
+            _issuedToken = token.AccessToken;
+            ConsoleState.AccessToken = token.AccessToken;
+            Snackbar.Add("Access token issued and stored.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Token request failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
