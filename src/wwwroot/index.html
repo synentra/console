@@ -4,24 +4,61 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Console</title>
+    <title>Synentra Console</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link href="Console.styles.css" rel="stylesheet" />
+    <script>
+        (function () {
+            var themeClass = "app-theme-light";
+
+            try {
+                var preferenceJson = window.localStorage.getItem("ConsolePreference");
+
+                if (preferenceJson) {
+                    var preference = JSON.parse(preferenceJson);
+                    if (preference && preference.IsDarkMode === true) {
+                        themeClass = "app-theme-dark";
+                    }
+                }
+            } catch {
+            }
+
+            document.documentElement.classList.add(themeClass);
+        })();
+    </script>
     <script type="importmap"></script>
 </head>
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="app-loading">
+            <div class="loading-brand">
+                <div class="loading-logo">
+                    <img src="logo.png"
+                         alt="Synentra"
+                         class="loading-logo-image" />
+                </div>
+
+                <div class="loading-wordmark">
+                    SYNENTRA
+                </div>
+            </div>
+
+            <div class="loading-spinner" aria-label="Loading">
+                <div class="loading-spinner-ring"></div>
+                <div class="loading-spinner-dot"></div>
+            </div>
+
+            <div class="loading-status">
+                <span class="loading-status-dot"></span>
+                Initializing Console
+            </div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -30,7 +67,7 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
 </body>
 
 </html>

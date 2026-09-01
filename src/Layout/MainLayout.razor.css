@@ -1,37 +1,52 @@
 /* ============================================================
    AppBar (top navigation)
    ============================================================ */
+.console-layout {
+    min-height: 100vh;
+}
+
 .console-appbar {
-    min-height: 64px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    min-height: 68px;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.48);
     box-shadow: var(--shadow-sm);
-    padding: 0 1.5rem;
+    padding: 0 clamp(0.8rem, 2vw, 1.5rem);
     display: flex;
     align-items: center;
+    gap: 0.25rem;
     transition: background var(--ease-standard), box-shadow var(--ease-standard);
 }
 
     .console-appbar .mud-typography-h6 {
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.01em;
     }
 
+.console-title {
+    white-space: nowrap;
+}
+
+.console-menu-toggle,
+.console-theme-toggle {
+    border-radius: 10px;
+}
+
 .console-subtitle {
     opacity: 0.7;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
 }
 
 /* ============================================================
    Drawer (sidebar)
    ============================================================ */
 .console-drawer {
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, #0c1628 0%, #162742 100%);
+    border-right: 1px solid rgba(148, 163, 184, 0.12);
     width: 280px;
-    padding-top: 1rem;
+    padding-top: 0.8rem;
 }
 
 .drawer-brand {
@@ -51,9 +66,13 @@
 /* ============================================================
    Main content area
    ============================================================ */
+.console-main-content {
+    min-height: calc(100vh - 68px);
+}
+
 .console-main {
     flex: 1;
-    padding: 1.75rem 2rem 2.5rem;
+    padding: var(--space-page-y) var(--space-page-x) clamp(1rem, 2.5vw, 1.8rem);
     max-width: 1600px;
     margin: 0 auto;
     width: 100%;
@@ -67,4 +86,29 @@
     backdrop-filter: blur(12px);
     border-bottom-color: rgba(255, 255, 255, 0.06);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 960px) {
+    .console-subtitle {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .console-appbar {
+        min-height: 60px;
+        padding-inline: 0.55rem;
+    }
+
+    .console-main-content {
+        min-height: calc(100vh - 60px);
+    }
+
+    .console-main {
+        padding-inline: 0.45rem;
+    }
+
+    .console-title {
+        font-size: 1rem;
+    }
 }

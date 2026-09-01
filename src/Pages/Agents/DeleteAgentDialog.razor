@@ -1,0 +1,130 @@
+﻿@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Delete Agent</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Confirm the deletion of this agent.
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+
+                <MudAlert Severity="Severity.Warning"
+                          Variant="Variant.Outlined"
+                          Dense="true"
+                          Class="mb-4">
+                    <MudText Typo="Typo.body1"><b>This action cannot be undone.</b></MudText>
+                    <MudText Typo="Typo.subtitle2">Any schedules, events, or executions associated with this agent will stop immediately.</MudText>
+                </MudAlert>
+
+                <MudPaper Outlined="true" Class="pa-4 rounded-lg">
+                    <MudText Typo="Typo.h6" Class="mb-1">
+                        You are about to delete the following agent:
+                    </MudText>
+
+                    <MudText Typo="Typo.subtitle2"><b>Agent ID:</b> @Agent.AgentId</MudText>
+                    <MudText Typo="Typo.subtitle2"><b>Name:</b> @Agent.Name</MudText>
+                    <MudText Typo="Typo.subtitle2"><b>Owner ID:</b> @Agent.OwnerId</MudText>
+                    <MudText Typo="Typo.subtitle2"><b>Trust Score:</b> @Agent.TrustScore</MudText>
+                </MudPaper>
+
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           Disabled="@IsProcessing"
+                           OnClick="Delete"
+                           StartIcon="@Icons.Material.Filled.DeleteForever">
+
+                    @if (IsProcessing)
+                    {
+                        <MudProgressCircular Indeterminate="true"
+                                             Size="Size.Small"
+                                             Class="mr-2" />
+                        <span>Deleting...</span>
+                    }
+                    else
+                    {
+                        <span>Delete Agent</span>
+                    }
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public AgentSummary Agent { get; set; } = default!;
+
+    private bool IsProcessing = false;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private async Task Delete()
+    {
+        try
+        {
+            IsProcessing = true;
+
+            var result = await Api.DeleteAgentAsync(Agent.AgentId);
+            if (result.StatusCode != 200)
+            {
+                SnackBar.Add("Server error while processing the request.", Severity.Error);
+                return;
+            }
+
+            SnackBar.Add("Workflow trigger deleted successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+}

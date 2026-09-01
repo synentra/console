@@ -5,11 +5,14 @@
 
 <PageTitle>Proxy</PageTitle>
 
-<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Proxy Request Lab</MudText>
-<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Call <code>/proxy/&lt;full-upstream-url&gt;</code> with custom method, body, and headers.</MudText>
+<div class="page-shell">
+<div>
+    <MudText Typo="Typo.h4" Class="fw-semibold page-title">Proxy Request Lab</MudText>
+    <MudText Typo="Typo.subtitle2" Class="mud-text-secondary page-subtitle">Call <code>/proxy/&lt;full-upstream-url&gt;</code> with custom method, body, and headers.</MudText>
+</div>
 
-<MudGrid>
-    <MudItem xs="12" lg="6">
+<MudGrid Class="content-grid">
+    <MudItem xs="12">
         <MudPaper Class="pa-4 glass-panel" Elevation="0">
             <MudSelect T="string" Label="Method" Variant="Variant.Outlined" @bind-Value="_request.Method" Class="mb-2">
                 @foreach (var method in _methods)
@@ -29,7 +32,7 @@
         </MudPaper>
     </MudItem>
 
-    <MudItem xs="12" lg="6">
+    <MudItem xs="12">
         <MudPaper Class="pa-4 glass-panel" Elevation="0">
             <MudText Typo="Typo.h6" Class="mb-2">Response</MudText>
 
@@ -45,6 +48,7 @@
                 </MudStack>
 
                 <MudText Typo="Typo.subtitle2" Class="mb-1">Headers</MudText>
+                <div class="table-responsive">
                 <MudTable Items="_result.Headers" Dense="true" Elevation="0" Class="mb-3">
                     <HeaderContent>
                         <MudTh>Name</MudTh>
@@ -55,6 +59,7 @@
                         <MudTd>@context.Value</MudTd>
                     </RowTemplate>
                 </MudTable>
+                </div>
 
                 <MudText Typo="Typo.subtitle2" Class="mb-1">Body</MudText>
                 <MudTextField Value="_result.Body" Variant="Variant.Outlined" Lines="12" ReadOnly="true" FullWidth="true" />
@@ -62,6 +67,7 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+</div>
 
 @code {
     private static readonly string[] _methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];

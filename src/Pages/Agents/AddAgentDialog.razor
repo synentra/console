@@ -1,0 +1,161 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Register Agent</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Register the agent into the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="RegisterAgentRequest.Name"
+                              Label="Agent Name"
+                              Placeholder="e.g. MyAgent"
+                              Variant="Variant.Filled"
+                              Margin="Margin.Dense"
+                              Required="true"
+                              Disabled="@IsProcessing"
+                              Clearable="true"
+                              HelperText="Name of the agent to register" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="RegisterAgentRequest.OwnerId"
+                              Label="Owner ID"
+                              Placeholder="e.g. synentra"
+                              Variant="Variant.Filled"
+                              Margin="Margin.Dense"
+                              Required="true"
+                              Disabled="@IsProcessing"
+                              Clearable="true"
+                              HelperText="Owner ID of the agent to register" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="RegisterAgentRequest.ClientSecret"
+                              Label="Client Secret"
+                              Placeholder="e.g. superSecret"
+                              Variant="Variant.Filled"
+                              Margin="Margin.Dense"
+                              Required="true"
+                              Disabled="@IsProcessing"
+                              Clearable="true"
+                              HelperText="Client Secret of the agent to register" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@IsProcessing"
+                           OnClick="AddAgent"
+                           StartIcon="@Icons.Material.Filled.Add">
+
+                    @if (IsProcessing)
+                    {
+                        <MudProgressCircular Indeterminate="true"
+                                             Size="Size.Small"
+                                             Class="mr-2" />
+                        <span>Registering…</span>
+                    }
+                    else
+                    {
+                        <span>Register Agent</span>
+                    }
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool IsProcessing = false;
+    private RegisterAgentRequest RegisterAgentRequest = new() { };
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private async Task AddAgent()
+    {
+        try
+        {
+            IsProcessing = true;
+            if (string.IsNullOrWhiteSpace(RegisterAgentRequest.Name) || string.IsNullOrWhiteSpace(RegisterAgentRequest.OwnerId) || string.IsNullOrWhiteSpace(RegisterAgentRequest.ClientSecret))
+            {
+                SnackBar.Add("Name, owner ID, and client secret are required.", Severity.Warning);
+                return;
+            }
+
+            var result = await Api.RegisterAgentAsync(RegisterAgentRequest);
+            if (result.StatusCode != 200)
+            {
+                SnackBar.Add("Server error while processing the request.", Severity.Error);
+                return;
+            }
+
+            if (result.IsSuccessStatusCode)
+            {
+                RegisterAgentRequest.Name = string.Empty;
+                RegisterAgentRequest.OwnerId = string.Empty;
+                RegisterAgentRequest.ClientSecret = string.Empty;
+                SnackBar.Add("Plugin installed successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+}

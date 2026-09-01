@@ -4,66 +4,101 @@
 
 <PageTitle>HITL</PageTitle>
 
-<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Human-in-the-Loop Queue</MudText>
-<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Review pending high-risk requests and approve or deny with operator comments.</MudText>
+<div class="page-shell">
+<div>
+    <MudText Typo="Typo.h4" Class="fw-semibold page-title">Human-in-the-Loop Queue</MudText>
+    <MudText Typo="Typo.subtitle2" Class="mud-text-secondary page-subtitle">Review pending high-risk requests and approve or deny with operator comments.</MudText>
+</div>
 
-<MudGrid>
-    <MudItem xs="12" lg="7">
-        <MudPaper Class="pa-4 glass-panel" Elevation="0">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Pending Requests</MudText>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadPendingAsync" Disabled="_busy">Refresh</MudButton>
+<MudPaper Class="pa-4 glass-panel" Elevation="0">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3" Wrap="Wrap.Wrap">
+        <MudText Typo="Typo.h6">Pending Requests</MudText>
+        <MudStack Row="true" Spacing="1">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddModal" Disabled="_busy">Add</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadPendingAsync" Disabled="_busy">Refresh</MudButton>
+        </MudStack>
+    </MudStack>
+
+    <div class="table-responsive">
+    <MudTable Items="_pending" Dense="true" Hover="true" Loading="_busy" Elevation="0">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Method</MudTh>
+            <MudTh>Target</MudTh>
+            <MudTh>Reason</MudTh>
+            <MudTh>Expires</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Method"><MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@context.Method</MudChip></MudTd>
+            <MudTd DataLabel="Target">@context.Url</MudTd>
+            <MudTd DataLabel="Reason">@context.Reason</MudTd>
+            <MudTd DataLabel="Expires">@context.ExpiresAt.LocalDateTime.ToString("g")</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudStack Row="true" Spacing="0">
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenDetailsModalAsync(context.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditModalAsync(context.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => QuickDenyAsync(context.Id))" />
+                </MudStack>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    </div>
+</MudPaper>
+</div>
+
+<MudDialog @bind-Visible="_showDetailsModal">
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Request Details</MudText>
+        @if (_selectedStatus is null)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">No request selected.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="1">
+                <MudText><b>ID:</b> @_selectedStatus.Id</MudText>
+                <MudText><b>Status:</b> @_selectedStatus.Status</MudText>
+                <MudText><b>Method:</b> @_selectedStatus.Request?.Method</MudText>
+                <MudText><b>URL:</b> @_selectedStatus.Request?.Url</MudText>
+                <MudText><b>Reason:</b> @_selectedStatus.Request?.Reason</MudText>
+                <MudText><b>Agent:</b> @_selectedStatus.Request?.AgentId</MudText>
             </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="CloseDetailsModal">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
-            <MudTable Items="_pending" Dense="true" Hover="true" Loading="_busy">
-                <HeaderContent>
-                    <MudTh>Method</MudTh>
-                    <MudTh>Target</MudTh>
-                    <MudTh>Reason</MudTh>
-                    <MudTh>Expires</MudTh>
-                    <MudTh></MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd><MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@context.Method</MudChip></MudTd>
-                    <MudTd>@context.Url</MudTd>
-                    <MudTd>@context.Reason</MudTd>
-                    <MudTd>@context.ExpiresAt.LocalDateTime.ToString("g")</MudTd>
-                    <MudTd>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => SelectRequestAsync(context.Id))">Open</MudButton>
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
-    </MudItem>
+<MudDialog @bind-Visible="_showEditModal">
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Review Request</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">Request ID: @_requestId</MudText>
+        <MudTextField Label="Comment (optional)" Variant="Variant.Outlined" @bind-Value="_comment" FullWidth="true" Lines="3" />
+        @if (!string.IsNullOrWhiteSpace(_lastDecisionBody))
+        {
+            <MudText Typo="Typo.subtitle2" Class="mt-3 mb-1">Last Decision Response</MudText>
+            <MudTextField Value="_lastDecisionBody" Variant="Variant.Outlined" ReadOnly="true" FullWidth="true" Lines="5" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="ApproveFromModalAsync" Disabled="_busy">Approve</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DenyFromModalAsync" Disabled="_busy">Deny</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="CloseEditModal">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
-    <MudItem xs="12" lg="5">
-        <MudPaper Class="pa-4 glass-panel" Elevation="0">
-            <MudText Typo="Typo.h6" Class="mb-3">Request Actions</MudText>
-            <MudTextField Label="Request ID" Variant="Variant.Outlined" @bind-Value="_requestId" FullWidth="true" Class="mb-2" />
-            <MudTextField Label="Comment (optional)" Variant="Variant.Outlined" @bind-Value="_comment" FullWidth="true" Lines="3" Class="mb-3" />
-            <MudStack Row="true" Spacing="1">
-                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Rounded.Check" OnClick="ApproveAsync" Disabled="_busy">Approve</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Rounded.Close" OnClick="DenyAsync" Disabled="_busy">Deny</MudButton>
-            </MudStack>
-
-            @if (_selectedStatus is not null)
-            {
-                <MudDivider Class="my-3" />
-                <MudText Typo="Typo.subtitle2">Status: @_selectedStatus.Status</MudText>
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Method: @_selectedStatus.Request?.Method</MudText><br />
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">URL: @_selectedStatus.Request?.Url</MudText><br />
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Reason: @_selectedStatus.Request?.Reason</MudText>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(_lastDecisionBody))
-            {
-                <MudDivider Class="my-3" />
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Last Decision Response</MudText>
-                <MudTextField Value="_lastDecisionBody" Variant="Variant.Outlined" Lines="6" ReadOnly="true" FullWidth="true" />
-            }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+<MudDialog @bind-Visible="_showAddModal">
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Add HITL Entry</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Manual HITL creation is not available from this console yet.</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="CloseAddModal">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     private readonly List<HitlPendingItem> _pending = [];
@@ -72,6 +107,9 @@
     private string _lastDecisionBody = string.Empty;
     private HitlStatusResponse? _selectedStatus;
     private bool _busy;
+    private bool _showDetailsModal;
+    private bool _showEditModal;
+    private bool _showAddModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,6 +138,18 @@
         }
     }
 
+    private async Task OpenDetailsModalAsync(string id)
+    {
+        await SelectRequestAsync(id);
+        _showDetailsModal = true;
+    }
+
+    private async Task OpenEditModalAsync(string id)
+    {
+        await SelectRequestAsync(id);
+        _showEditModal = true;
+    }
+
     private async Task SelectRequestAsync(string id)
     {
         _requestId = id;
@@ -122,7 +172,7 @@
         }
     }
 
-    private async Task ApproveAsync()
+    private async Task ApproveFromModalAsync()
     {
         if (string.IsNullOrWhiteSpace(_requestId))
         {
@@ -138,6 +188,7 @@
             Snackbar.Add(result.IsSuccessStatusCode ? "Request approved." : result.ErrorMessage ?? "Approve failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
             await SelectRequestAsync(_requestId);
             await LoadPendingAsync();
+            _showEditModal = false;
         }
         finally
         {
@@ -145,7 +196,7 @@
         }
     }
 
-    private async Task DenyAsync()
+    private async Task DenyFromModalAsync()
     {
         if (string.IsNullOrWhiteSpace(_requestId))
         {
@@ -161,10 +212,38 @@
             Snackbar.Add(result.IsSuccessStatusCode ? "Request denied." : result.ErrorMessage ?? "Deny failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
             await SelectRequestAsync(_requestId);
             await LoadPendingAsync();
+            _showEditModal = false;
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private async Task QuickDenyAsync(string id)
+    {
+        _requestId = id;
+        _comment = "Denied from list action.";
+        await DenyFromModalAsync();
+    }
+
+    private void ShowAddModal()
+    {
+        _showAddModal = true;
+    }
+
+    private void CloseDetailsModal()
+    {
+        _showDetailsModal = false;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+    }
+
+    private void CloseAddModal()
+    {
+        _showAddModal = false;
     }
 }

@@ -1,23 +1,49 @@
-﻿@* NavMenu.razor *@
-<MudNavMenu Class="console-nav-shell" Dense="true" Rounded="true">
-    <MudText Class="drawer-brand" Style="padding:0.5rem 1.25rem 1.5rem;">
-        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Color="Color.Primary" />
-        Synentra
-    </MudText>
+﻿<MudNavMenu Class="px-2 pt-2">
 
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Dashboard</MudNavLink>
+    <!-- Main -->
+    <MudNavLink Href="/"
+                Match="NavLinkMatch.All"
+                Icon="@Icons.Material.Filled.Home"
+                Class="nav-item">
+        Dashboard
+    </MudNavLink>
 
-    <MudNavGroup Text="Security" Icon="@Icons.Material.Filled.Security">
+    <MudDivider Class="my-1" />
+
+    <!-- Security -->
+    <MudNavGroup Title="Security"
+                 Icon="@Icons.Material.Filled.Security"
+                 Expanded="true">
+
         <MudNavLink Href="/tokens" Icon="@Icons.Material.Filled.VpnKey">Tokens</MudNavLink>
         <MudNavLink Href="/agents" Icon="@Icons.Material.Filled.SmartToy">Agents</MudNavLink>
         <MudNavLink Href="/policies" Icon="@Icons.Material.Filled.Policy">Policies</MudNavLink>
+
     </MudNavGroup>
 
-    <MudNavGroup Text="Operations" Icon="@Icons.Material.Filled.Settings">
+    <MudDivider Class="my-1" />
+
+    <!-- Operations -->
+    <MudNavGroup Title="Operations"
+                 Icon="@Icons.Material.Filled.Settings">
+
         <MudNavLink Href="/hitl" Icon="@Icons.Material.Filled.VerifiedUser">HITL Queue</MudNavLink>
         <MudNavLink Href="/proxy" Icon="@Icons.Material.Filled.TravelExplore">Proxy Lab</MudNavLink>
         <MudNavLink Href="/audit" Icon="@Icons.Material.Filled.FactCheck">Audit</MudNavLink>
+
     </MudNavGroup>
 
     <MudNavLink Href="/health" Icon="@Icons.Material.Filled.MonitorHeart">Health</MudNavLink>
+
 </MudNavMenu>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

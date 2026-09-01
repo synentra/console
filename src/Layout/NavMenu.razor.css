@@ -1,51 +1,57 @@
 .console-nav-shell ::deep .mud-nav-link {
     border-radius: var(--radius-md);
-    margin: 0.1rem 0.5rem;
-    padding: 0.6rem 1rem;
+    margin: 0.18rem 0.62rem;
+    padding: 0.62rem 0.92rem;
     font-weight: 500;
-    color: rgba(226,232,240,0.85);
-    transition: all 0.15s ease;
+    color: rgba(226, 232, 240, 0.84);
+    transition: all var(--ease-standard);
 }
 
-    .console-nav-shell ::deep .mud-nav-link .mud-icon {
-        opacity: 0.7;
-    }
+.console-nav-shell ::deep .mud-nav-link .mud-icon {
+    opacity: 0.76;
+    transition: color var(--ease-standard), opacity var(--ease-standard);
+}
 
-    .console-nav-shell ::deep .mud-nav-link.active {
-        background: rgba(37,99,235,0.3);
-        color: #ffffff;
-        box-shadow: inset 3px 0 0 var(--color-primary);
-    }
+.console-nav-shell ::deep .mud-nav-link.active {
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.36), rgba(59, 130, 246, 0.2));
+    color: #ffffff;
+    box-shadow: inset 3px 0 0 var(--color-primary), 0 8px 18px rgba(2, 6, 23, 0.28);
+}
 
-        .console-nav-shell ::deep .mud-nav-link.active .mud-icon {
-            opacity: 1;
-            color: var(--color-primary-light);
-        }
+.console-nav-shell ::deep .mud-nav-link.active .mud-icon {
+    opacity: 1;
+    color: #bfdbfe;
+}
 
-    .console-nav-shell ::deep .mud-nav-link:hover {
-        background: rgba(148,163,184,0.15);
-        color: #f8fafc;
-    }
+.console-nav-shell ::deep .mud-nav-link:hover {
+    background: rgba(148, 163, 184, 0.18);
+    color: #f8fafc;
+    transform: translateX(1px);
+}
 
 .console-nav-shell ::deep .mud-nav-group .mud-nav-link {
-    padding-left: 2.5rem;
+    padding-left: 2.6rem;
 }
 
 .console-nav-shell ::deep .mud-nav-group .mud-nav-group-title {
-    color: #94a3b8;
+    color: #8fa5c3;
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    padding: 0.75rem 1rem 0.25rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    padding: 0.8rem 1rem 0.3rem;
 }
 
-.drawer-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #e2e8f0;
-    font-weight: 600;
-    font-size: 1.2rem;
-    padding: 0.5rem 1.25rem 1.5rem;
+.console-nav-shell {
+    padding-bottom: 0.7rem;
+}
+
+.mud-theme-light .console-nav-shell ::deep .mud-nav-group .mud-nav-group-title {
+    color: #7f8da0;
+}
+
+@media (max-width: 960px) {
+    .console-nav-shell ::deep .mud-nav-link {
+        margin-inline: 0.5rem;
+    }
 }
