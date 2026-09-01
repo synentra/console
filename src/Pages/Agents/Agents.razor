@@ -6,7 +6,7 @@
 <PageTitle>Agents</PageTitle>
 
 <HeaderTitle Title="Managing agents"
-             Description="This section enumerates all agents currently registered and available within the Synentra system. Each entry includes the agent name, ID, owner, status, policy, and trust score."
+             Description="This section enumerates all agents currently registered and available within the Synentra system."
              Icon="@Icons.Material.Filled.SmartToy"
              IconColor="Color.Primary"
              IconSize="Size.Large" />
@@ -70,12 +70,6 @@
 @code {
     private readonly RegisterAgentRequest _register = new();
     private MudTable<AgentSummary>? _table;
-
-    private string _assignPolicyName = string.Empty;
-    private bool _busy;
-    private bool _showAddModal;
-    private bool _showAssignPolicyModal;
-    private AgentSummary? _selectedAgent;
 
     private async Task<TableData<AgentSummary>> LoadData(TableState state, CancellationToken cancellationToken)
     {
