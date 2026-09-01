@@ -1,0 +1,180 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Policy Details</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            View the details of the policy in the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="PolicyDetails?.Name"
+                                      Label="Policy Name"
+                                      Placeholder="e.g. DefaultPolicy"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Name of the policy" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="PolicyDetails?.Owner"
+                                      Label="Owner"
+                                      Placeholder="e.g. synentra"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Owner of the policy" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="PolicyDetails?.Default"
+                                      Label="Default"
+                                      Placeholder="e.g. Active"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Default value of the policy" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="PolicyDetails?.CreatedOn"
+                                      Label="Created On"
+                                      Placeholder="e.g. 2024-06-01"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Creation date of the policy" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="PolicyDetails?.Description"
+                                      Label="Description"
+                                      Placeholder="e.g. Default policy description"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      Lines="4"
+                                      HelperText="Description of the policy" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-4" />
+
+                <!-- Properties -->
+                <MudText Typo="Typo.h6" Class="mb-2">
+                    Policy Rules
+                </MudText>
+
+                <MudTable Items="PolicyDetails?.Rules" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Action</MudTh>
+                        <MudTh>Priority</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Name</MudTd>
+                        <MudTd>@context.Effect</MudTd>
+                        <MudTd>@context.Priority</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string PolicyName { get; set; } = default!;
+
+    private PolicyDetails? PolicyDetails;
+    private bool IsProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDetails();
+    }
+
+    private async Task GetDetails()
+    {
+        try
+        {
+            IsProcessing = true;
+
+            PolicyDetails = await Api.GetPolicyAsync(PolicyName);
+            if (PolicyDetails is null)
+            {
+                SnackBar.Add("Server error while processing the request.", Severity.Error);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+}

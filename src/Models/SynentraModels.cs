@@ -51,7 +51,7 @@ public sealed class PolicyDetails
 public sealed class PolicyRule
 {
     public string Name { get; set; } = string.Empty;
-    public string Action { get; set; } = string.Empty;
+    public string Effect { get; set; } = string.Empty;
     public int Priority { get; set; }
 }
 
