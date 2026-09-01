@@ -1,0 +1,237 @@
+@page "/policies"
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+@inject IDialogService DialogService
+
+<PageTitle>Policies</PageTitle>
+
+<HeaderTitle Title="Managing policies"
+             Description="This section enumerates all policies currently registered and available within the Synentra system."
+             Icon="@Icons.Material.Filled.Policy"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
+
+<MudTable T="PolicySummary"
+          ServerData="LoadData"
+          Dense="true"
+          Hover="true"
+          Bordered="false"
+          Striped="false"
+          @ref="_table" LoadingProgressColor="Color.Primary">
+    <ToolBarContent>
+        <MudFab Color="Color.Surface"
+                Size="@Size.Small"
+                StartIcon="@Icons.Material.Filled.Refresh"
+                class="ml-2"
+                Label="Refresh"
+                OnClick="Refresh" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Owner</MudTh>
+        <MudTh>Description</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name"><b>@context.PolicyName</b></MudTd>
+        <MudTd DataLabel="Owner">@context.Owner</MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudStack Row="true" Spacing="0">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => PolicyDetailsAsync(context))" />
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@* <MudDialog @bind-Visible="_showDetailsModal">
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Policy Details</MudText>
+
+        @if (_selectedPolicy is null)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">No policy details available.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="1">
+                <MudText><b>Name:</b> @_selectedPolicy.Name</MudText>
+                <MudText><b>Owner:</b> @_selectedPolicy.Owner</MudText>
+                <MudText><b>Description:</b> @_selectedPolicy.Description</MudText>
+                <MudText><b>Default:</b> @_selectedPolicy.Default</MudText>
+                <MudText><b>Created On:</b> @_selectedPolicy.CreatedOn?.ToString("u")</MudText>
+            </MudStack>
+
+            <MudDivider Class="my-3" />
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Rules (@_selectedPolicy.Rules.Count)</MudText>
+            <div class="table-responsive">
+            <MudTable Items="_selectedPolicy.Rules" Dense="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Action</MudTh>
+                    <MudTh>Priority</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.Action</MudTd>
+                    <MudTd>@context.Priority</MudTd>
+                </RowTemplate>
+            </MudTable>
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="CloseDetailsModal">Close</MudButton>
+    </DialogActions>
+</MudDialog> *@
+
+@code {
+    private MudTable<PolicySummary>? _table;
+    private PolicyDetails? _selectedPolicy;
+    private bool _busy;
+    private bool _showDetailsModal;
+    private bool _showEditModal;
+    private bool _showAddModal;
+    private string _editorPolicyName = string.Empty;
+    private string _editorOwner = string.Empty;
+    private string _editorDescription = string.Empty;
+
+    private async Task<TableData<PolicySummary>> LoadData(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await Api.GetPoliciesAsync(state.Page + 1, state.PageSize);
+
+            if (response is null)
+            {
+                SnackBar.Add("Failed to load policies: No response received.", Severity.Error);
+                return new TableData<PolicySummary> { Items = [], TotalItems = 0 };
+            }
+
+            var totalCount = response.TotalCount;
+
+            return new TableData<PolicySummary>
+            {
+                Items = response.Items,
+                TotalItems = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Exception occurred: {ex.Message}", Severity.Error);
+            return new TableData<PolicySummary>
+            {
+                Items = [],
+                TotalItems = 0
+            };
+        }
+    }
+
+    private async Task Refresh()
+    {
+        if (_table != null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task PolicyDetailsAsync(PolicySummary policy)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {
+            { "PolicyName", policy.PolicyName },
+        };
+
+        await DialogService.ShowAsync<DetailsPolicyDialog>("Policy Details", parameters, options);
+    }
+
+    // private async Task OpenDetailsModalAsync(string policyName)
+    // {
+    //     _busy = true;
+    //     try
+    //     {
+    //         _selectedPolicy = await Api.GetPolicyAsync(policyName);
+    //         if (_selectedPolicy is null)
+    //         {
+    //             Snackbar.Add("Policy detail response was empty.", Severity.Warning);
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Snackbar.Add($"Failed to load policy details: {ex.Message}", Severity.Error);
+    //     }
+    //     finally
+    //     {
+    //         _busy = false;
+    //     }
+
+    //     _showDetailsModal = true;
+    // }
+
+    // private void OpenEditModal(PolicySummary policy)
+    // {
+    //     _editorPolicyName = policy.PolicyName;
+    //     _editorOwner = policy.Owner;
+    //     _editorDescription = policy.Description;
+    //     _showEditModal = true;
+    // }
+
+    // private void ShowAddModal()
+    // {
+    //     _editorPolicyName = string.Empty;
+    //     _editorOwner = string.Empty;
+    //     _editorDescription = string.Empty;
+    //     _showAddModal = true;
+    // }
+
+    // private Task SaveAddAsync()
+    // {
+    //     Snackbar.Add("Policy create API is not available in this console yet.", Severity.Info);
+    //     _showAddModal = false;
+    //     return Task.CompletedTask;
+    // }
+
+    // private Task SaveEditAsync()
+    // {
+    //     Snackbar.Add("Policy update API is not available in this console yet.", Severity.Info);
+    //     _showEditModal = false;
+    //     return Task.CompletedTask;
+    // }
+
+    // private void DeletePolicy(string policyName)
+    // {
+    //     Snackbar.Add($"Policy delete API is not available yet for '{policyName}'.", Severity.Info);
+    // }
+
+    // private void CloseDetailsModal()
+    // {
+    //     _showDetailsModal = false;
+    // }
+
+    // private void CloseEditModal()
+    // {
+    //     _showEditModal = false;
+    // }
+
+    // private void CloseAddModal()
+    // {
+    //     _showAddModal = false;
+    // }
+}
