@@ -10,7 +10,7 @@ public sealed class PagedResult<T>
 
 public sealed class AgentSummary
 {
-    public Guid Id { get; set; }
+    public Guid AgentId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string OwnerId { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -27,6 +27,7 @@ public sealed class RegisterAgentRequest
 
 public sealed class AssignPolicyRequest
 {
+    public Guid AgentId { get; set; }
     public string PolicyName { get; set; } = string.Empty;
 }
 

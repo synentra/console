@@ -1,0 +1,142 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Agent Details</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            View the details of the agent in the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Agent.AgentId"
+                                      Label="Agent ID"
+                                      Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="ID of the agent" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="Agent.Name"
+                                      Label="Agent Name"
+                                      Placeholder="e.g. MyAgent"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Name of the agent" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="Agent.OwnerId"
+                                      Label="Owner ID"
+                                      Placeholder="e.g. synentra"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Owner ID of the agent" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="Agent.Status"
+                                      Label="Status"
+                                      Placeholder="e.g. Active"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Status of the agent" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="Agent.PolicyName"
+                                      Label="Policy Name"
+                                      Placeholder="e.g. DefaultPolicy"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Policy name of the agent" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="Agent.TrustScore"
+                                      Label="Trust Score"
+                                      Placeholder="e.g. 0.85"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Trust score of the agent" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public AgentSummary Agent { get; set; } = default!;
+
+    private bool IsProcessing = false;
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+}

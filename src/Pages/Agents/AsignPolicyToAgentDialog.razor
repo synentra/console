@@ -1,0 +1,157 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Assign Policy</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Register the agent into the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="AgentId"
+                              Label="Agent Id"
+                              Placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                              Variant="Variant.Filled"
+                              Margin="Margin.Dense"
+                              Required="true"
+                              Disabled="true"
+                              ReadOnly="true"
+                              Clearable="true"
+                              HelperText="Name of the agent to register" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="PolicyName"
+                              Label="Policy Name"
+                              Placeholder="e.g. MyPolicy"
+                              Variant="Variant.Filled"
+                              Margin="Margin.Dense"
+                              Required="true"
+                              Disabled="@IsProcessing"
+                              Clearable="true"
+                              HelperText="Name of the policy to assign" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@IsProcessing"
+                           OnClick="AssignPolicy"
+                           StartIcon="@Icons.Material.Filled.Policy">
+
+                    @if (IsProcessing)
+                    {
+                        <MudProgressCircular Indeterminate="true"
+                                             Size="Size.Small"
+                                             Class="mr-2" />
+                        <span>Assigning…</span>
+                    }
+                    else
+                    {
+                        <span>Assign Policy</span>
+                    }
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public Guid AgentId { get; set; } = default!;
+
+    private string PolicyName { get; set; } = string.Empty;
+    private bool IsProcessing = false;
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private async Task AssignPolicy()
+    {
+        try
+        {
+            IsProcessing = true;
+            if (string.IsNullOrWhiteSpace(PolicyName))
+
+            {
+                SnackBar.Add("Name, owner ID, and client secret are required.", Severity.Warning);
+                return;
+            }
+
+            var result = await Api.AssignPolicyAsync(new AssignPolicyRequest
+            {
+                AgentId = AgentId,
+                PolicyName = PolicyName
+            });
+
+            if (result.StatusCode != 200)
+            {
+                SnackBar.Add($"Server error while processing the request. Status code: {result.ErrorMessage}", Severity.Error);
+                return;
+            }
+
+            if (result.IsSuccessStatusCode)
+            {
+                PolicyName = string.Empty;
+                SnackBar.Add("Policy assigned successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+}

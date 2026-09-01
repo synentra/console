@@ -31,16 +31,16 @@ public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
         GetFromJsonAsync<HitlStatusResponse>($"hitl/status/{Uri.EscapeDataString(id)}");
 
     public Task<ApiCallResult> RegisterAgentAsync(RegisterAgentRequest request) =>
-        SendJsonAsync(HttpMethod.Post, "agents", request, true);
+        SendJsonAsync(HttpMethod.Post, "agents", request, false);
 
-    public Task<ApiCallResult> AssignPolicyAsync(Guid agentId, AssignPolicyRequest request) =>
-        SendJsonAsync(HttpMethod.Put, $"agents/{agentId}/policy", request, true);
+    public Task<ApiCallResult> AssignPolicyAsync(AssignPolicyRequest request) =>
+        SendJsonAsync(HttpMethod.Put, $"agents/{request.AgentId}/policy", request, false);
 
     public Task<ApiCallResult> DeleteAgentAsync(Guid agentId) =>
-        SendJsonAsync(HttpMethod.Delete, $"agents/{agentId}", null, true);
+        SendJsonAsync(HttpMethod.Delete, $"agents/{agentId}", null, false);
 
     public Task<ApiCallResult> LiftQuarantineAsync(Guid agentId) =>
-        SendJsonAsync(HttpMethod.Post, $"agents/{agentId}/lift-quarantine", null, true);
+        SendJsonAsync(HttpMethod.Post, $"agents/{agentId}/lift-quarantine", null, false);
 
     public async Task<TokenResponse?> ExchangeTokenAsync(TokenRequest request)
     {
@@ -68,13 +68,13 @@ public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
     }
 
     public Task<ApiCallResult> ApproveHitlAsync(string id, HitlDecisionRequest request) =>
-        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/approve", request, true);
+        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/approve", request, false);
 
     public Task<ApiCallResult> DenyHitlAsync(string id, HitlDecisionRequest request) =>
-        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/deny", request, true);
+        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/deny", request, false);
 
     public Task<ApiCallResult> GetAuditByIdAsync(string id) =>
-        SendJsonAsync(HttpMethod.Get, $"Audit/{Uri.EscapeDataString(id)}", null, true);
+        SendJsonAsync(HttpMethod.Get, $"Audit/{Uri.EscapeDataString(id)}", null, false);
 
     public async Task<ApiCallResult> SendProxyRequestAsync(ProxyCallRequest proxyRequest)
     {
@@ -107,7 +107,7 @@ public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
 
     private async Task<T?> GetFromJsonAsync<T>(string path)
     {
-        using var request = BuildRequest(HttpMethod.Get, path, includeAuth: true);
+        using var request = BuildRequest(HttpMethod.Get, path, includeAuth: false);
         using var response = await httpClient.SendAsync(request);
         if (!response.IsSuccessStatusCode || response.Content is null)
         {

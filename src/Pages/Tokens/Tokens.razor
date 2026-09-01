@@ -5,19 +5,44 @@
 
 <PageTitle>Tokens</PageTitle>
 
-<MudText Typo="Typo.h4" Class="fw-semibold mb-1">Token Exchange</MudText>
-<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-4">Exchange agent credentials for a JWT access token.</MudText>
+<HeaderTitle Title="Token Exchange"
+             Description="Exchange agent credentials for a JWT access token."
+             Icon="@Icons.Material.Filled.VpnKey"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
 
 <MudPaper Class="pa-4 glass-panel" Elevation="0">
-    <MudGrid>
-        <MudItem xs="12" md="4">
-            <MudTextField Label="Agent ID" Variant="Variant.Outlined" @bind-Value="_agentId" Placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6" FullWidth="true" />
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="_agentId"
+                          Label="Agent ID"
+                          Placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                          Variant="Variant.Filled"
+                          Margin="Margin.Dense"
+                          Required="true"
+                          FullWidth="true"
+                          Clearable="true"
+                          HelperText="Agent ID of the agent" />
         </MudItem>
-        <MudItem xs="12" md="4">
-            <MudTextField Label="Client Secret" Variant="Variant.Outlined" @bind-Value="_clientSecret" InputType="InputType.Password" FullWidth="true" />
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="_clientSecret"
+                          Label="Client Secret"
+                          Variant="Variant.Filled"
+                          Margin="Margin.Dense"
+                          FullWidth="true"
+                          Clearable="true"
+                          InputType="InputType.Password"
+                          HelperText="Client Secret of the agent" />
         </MudItem>
-        <MudItem xs="12" md="4">
-            <MudTextField Label="External Token" Variant="Variant.Outlined" @bind-Value="_externalToken" FullWidth="true" />
+        <MudItem xs="12" md="12">
+            <MudTextField @bind-Value="_externalToken"
+                          Label="External Token"
+                          Variant="Variant.Filled"
+                          Margin="Margin.Dense"
+                          FullWidth="true"
+                          Clearable="true"
+                          Lines="4"
+                          HelperText="External Token of the agent" />
         </MudItem>
         <MudItem xs="12">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Key" OnClick="IssueTokenAsync" Disabled="_busy">

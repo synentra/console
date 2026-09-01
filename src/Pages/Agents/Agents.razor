@@ -1,0 +1,198 @@
+@page "/agents"
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+@inject IDialogService DialogService
+
+<PageTitle>Agents</PageTitle>
+
+<HeaderTitle Title="Managing agents"
+             Description="This section enumerates all agents currently registered and available within the Synentra system. Each entry includes the agent name, ID, owner, status, policy, and trust score."
+             Icon="@Icons.Material.Filled.SmartToy"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
+
+<MudTable T="AgentSummary"
+          ServerData="LoadData"
+          Dense="true"
+          Hover="true"
+          Bordered="false"
+          Striped="false"
+          @ref="_table" LoadingProgressColor="Color.Primary">
+    <ToolBarContent>
+        <MudFab Color="Color.Primary"
+                Size="@Size.Small"
+                StartIcon="@Icons.Material.Filled.Add"
+                Label="Add Agent"
+                OnClick="RegisterAgentAsync" />
+
+        <MudFab Color="Color.Surface"
+                Size="@Size.Small"
+                StartIcon="@Icons.Material.Filled.Refresh"
+                class="ml-2"
+                Label="Refresh"
+                OnClick="Refresh" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Agent Id</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>Owner</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Policy</MudTh>
+        <MudTh>Trust</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ID"><b>@context.AgentId</b></MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Owner">@context.OwnerId</MudTd>
+        <MudTd DataLabel="Status">@context.Status</MudTd>
+        <MudTd DataLabel="Policy">@context.PolicyName</MudTd>
+        <MudTd DataLabel="Trust">@context.TrustScore</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudStack Row="true" Spacing="0">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => AgentDetailsAsync(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Policy" Color="Color.Secondary" Size="Size.Small" OnClick="@(() => AssignPolicyAsync(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteAgentAsync(context))" />
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private readonly RegisterAgentRequest _register = new();
+    private MudTable<AgentSummary>? _table;
+
+    private string _assignPolicyName = string.Empty;
+    private bool _busy;
+    private bool _showAddModal;
+    private bool _showAssignPolicyModal;
+    private AgentSummary? _selectedAgent;
+
+    private async Task<TableData<AgentSummary>> LoadData(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await Api.GetAgentsAsync(state.Page + 1, state.PageSize);
+
+            if (response is null)
+            {
+                SnackBar.Add("Failed to load agents: No response received.", Severity.Error);
+                return new TableData<AgentSummary> { Items = [], TotalItems = 0 };
+            }
+
+            var totalCount = response.TotalCount;
+
+            return new TableData<AgentSummary>
+            {
+                Items = response.Items,
+                TotalItems = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Exception occurred: {ex.Message}", Severity.Error);
+            return new TableData<AgentSummary>
+            {
+                Items = [],
+                TotalItems = 0
+            };
+        }
+    }
+
+    private async Task Refresh()
+    {
+        if (_table != null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task RegisterAgentAsync()
+    {
+        var options = new DialogOptions
+            {
+                CloseButton = false,
+                MaxWidth = MaxWidth.Small,
+                BackdropClick = false,
+                CloseOnEscapeKey = false,
+                BackgroundClass = "blur-dialog-background"
+            };
+
+        var parameters = new DialogParameters { };
+
+        var dialog = await DialogService.ShowAsync<AddAgentDialog>("Add new agent", parameters, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult != null && !dialogResult.Canceled)
+            await Refresh();
+    }
+
+    private async Task AgentDetailsAsync(AgentSummary agent)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {            
+            { "Agent", agent },
+        };
+
+        await DialogService.ShowAsync<DetailsAgentDialog>("Agent Details", parameters, options);
+    }
+
+    
+    private async Task DeleteAgentAsync(AgentSummary agent)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {
+            { "Agent", agent },
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteAgentDialog>("Delete Agent", parameters, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult != null && !dialogResult.Canceled)
+            await Refresh();
+    }
+
+    private async Task AssignPolicyAsync(AgentSummary agent)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {
+            { "AgentId", agent.AgentId },
+        };
+
+        var dialog = await DialogService.ShowAsync<AsignPolicyToAgentDialog>("Assign Policy", parameters, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult != null && !dialogResult.Canceled)
+            await Refresh();
+    }
+}

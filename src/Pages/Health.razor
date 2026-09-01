@@ -4,10 +4,11 @@
 
 <PageTitle>Health</PageTitle>
 
-<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+<div class="page-shell">
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="page-header" Wrap="Wrap.Wrap">
     <div>
-        <MudText Typo="Typo.h4" Class="fw-semibold mb-1">Gateway Health</MudText>
-        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">Live liveness/readiness status from <code>/health</code>.</MudText>
+        <MudText Typo="Typo.h4" Class="fw-semibold page-title">Gateway Health</MudText>
+        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary page-subtitle">Live liveness/readiness status from <code>/health</code>.</MudText>
     </div>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadHealthAsync" Disabled="_busy">
         @(_busy ? "Refreshing..." : "Refresh")
@@ -35,6 +36,7 @@
         </MudGrid>
     }
 </MudPaper>
+</div>
 
 @code {
     private HealthResponse? _health;
