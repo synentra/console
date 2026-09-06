@@ -3,98 +3,511 @@
 @inject SynentraApiClient Api
 @inject ISnackbar Snackbar
 
-<PageTitle>Proxy</PageTitle>
+<PageTitle>Proxy Request Lab</PageTitle>
 
-<div class="page-shell">
-<div>
-    <MudText Typo="Typo.h4" Class="fw-semibold page-title">Proxy Request Lab</MudText>
-    <MudText Typo="Typo.subtitle2" Class="mud-text-secondary page-subtitle">Call <code>/proxy/&lt;full-upstream-url&gt;</code> with custom method, body, and headers.</MudText>
-</div>
+<HeaderTitle Title="Proxy Request Lab"
+             Description="Send HTTP requests through the Synentra proxy and inspect the upstream response."
+             Icon="@Icons.Material.Filled.TravelExplore"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
 
-<MudGrid Class="content-grid">
-    <MudItem xs="12">
-        <MudPaper Class="pa-4 glass-panel" Elevation="0">
-            <MudSelect T="string" Label="Method" Variant="Variant.Outlined" @bind-Value="_request.Method" Class="mb-2">
-                @foreach (var method in _methods)
+<MudStack Spacing="3" Class="content-grid">
+
+    <!-- Request -->
+    <MudPaper Class="pa-4 glass-panel" Elevation="0">
+
+        <MudStack Spacing="3">
+
+            <div>
+                <MudText Typo="Typo.h6">Request</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Configure the HTTP request that will be sent through Synentra.
+                </MudText>
+            </div>
+
+            <!-- Method + URL -->
+            <MudGrid Spacing="2">
+
+                <MudItem xs="12" sm="2" md="2">
+                    <MudSelect T="string"
+                               Label="Method"
+                               Variant="Variant.Filled"
+                               @bind-Value="_request.Method"
+                               HelperText="HTTP method to use for the request."
+                               FullWidth="true">
+
+                        @foreach (var method in _methods)
+                        {
+                            <MudSelectItem Value="@method">
+                                @method
+                            </MudSelectItem>
+                        }
+
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="10" md="10">
+                    <MudTextField T="string"
+                                  Label="Target URL"
+                                  Variant="Variant.Filled"
+                                  @bind-Value="_request.TargetUrl"
+                                  Placeholder="https://api.example.com/users/123"
+                                  Required="true"
+                                  RequiredError="Target URL is required."
+                                  FullWidth="true"
+                                  HelperText="The complete upstream URL that Synentra should proxy to."
+                                  Immediate="true" />
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- Request configuration -->
+            @if (HasRequestBody)
+            {
+                <MudTextField T="string"
+                              Label="Content-Type"
+                              Variant="Variant.Filled"
+                              @bind-Value="_request.ContentType"
+                              Placeholder="application/json"
+                              FullWidth="true"
+                              HelperText="Content type of the request body." />
+            }
+
+            <!-- Headers -->
+            <MudStack Spacing="2">
+
+                <MudStack Row="true"
+                          AlignItems="AlignItems.Center"
+                          Justify="Justify.SpaceBetween">
+
+                    <div>
+                        <MudText Typo="Typo.subtitle1">
+                            Headers
+                        </MudText>
+
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Optional HTTP headers sent to the upstream service.
+                        </MudText>
+                    </div>
+
+                    <MudButton Variant="Variant.Outlined"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="AddHeader">
+                        Add Header
+                    </MudButton>
+
+                </MudStack>
+
+                @if (_headers.Count == 0)
                 {
-                    <MudSelectItem Value="@method">@method</MudSelectItem>
+                    <MudPaper Class="pa-4"
+                              Outlined="true"
+                              Elevation="0">
+
+                        <MudStack AlignItems="AlignItems.Center"
+                                  Spacing="1">
+
+                            <MudIcon Icon="@Icons.Material.Filled.Http"
+                                     Color="Color.Secondary" />
+
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                No custom headers
+                            </MudText>
+
+                            <MudText Typo="Typo.caption"
+                                     Color="Color.Secondary">
+                                Add a header if the upstream API requires one.
+                            </MudText>
+
+                        </MudStack>
+
+                    </MudPaper>
                 }
-            </MudSelect>
+                else
+                {
+                    <MudStack Spacing="1">
 
-            <MudTextField Label="Target URL" Variant="Variant.Outlined" @bind-Value="_request.TargetUrl" Placeholder="https://api.example.com/users/123" FullWidth="true" Class="mb-2" />
-            <MudTextField Label="Content-Type" Variant="Variant.Outlined" @bind-Value="_request.ContentType" FullWidth="true" Class="mb-2" />
-            <MudTextField Label="Additional Headers (JSON object)" Variant="Variant.Outlined" @bind-Value="_headersJson" Lines="4" FullWidth="true" Class="mb-2" />
-            <MudTextField Label="Body" Variant="Variant.Outlined" @bind-Value="_request.JsonBody" Lines="8" FullWidth="true" Class="mb-3" />
+                        @foreach (var header in _headers)
+                        {
+                            <MudGrid Spacing="1"
+                                     AlignItems="AlignItems.Center">
 
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Send" OnClick="SendAsync" Disabled="_busy">
-                @(_busy ? "Sending..." : "Send Proxy Request")
-            </MudButton>
-        </MudPaper>
-    </MudItem>
+                                <MudItem xs="12" sm="5">
+                                    <MudTextField T="string"
+                                                  @bind-Value="header.Key"
+                                                  Variant="Variant.Filled"
+                                                  Label="Header Name"
+                                                  Margin="Margin.Dense"
+                                                  Placeholder="Header name"
+                                                  Immediate="true"
+                                                  FullWidth="true" />
+                                </MudItem>
 
-    <MudItem xs="12">
-        <MudPaper Class="pa-4 glass-panel" Elevation="0">
-            <MudText Typo="Typo.h6" Class="mb-2">Response</MudText>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string"
+                                                  @bind-Value="header.Value"
+                                                  Variant="Variant.Filled"
+                                                  Label="Header Value"
+                                                  Margin="Margin.Dense"
+                                                  Placeholder="Header value"
+                                                  Immediate="true"
+                                                  FullWidth="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                   Color="Color.Error"
+                                                   AriaLabel="Remove header"
+                                                   OnClick="@(() => RemoveHeader(header))" />
+                                </MudItem>
+
+                            </MudGrid>
+                        }
+
+                    </MudStack>
+                }
+
+            </MudStack>
+
+            <!-- Body -->
+            @if (HasRequestBody)
+            {
+                <div>
+                    <MudTextField T="string"
+                                  Label="Request Body"
+                                  Variant="Variant.Filled"
+                                  @bind-Value="_request.JsonBody"
+                                  Lines="10"
+                                  FullWidth="true"
+                                  Placeholder="{&#34;name&#34;: &#34;John Doe&#34;}"
+                                  HelperText="Optional request payload. JSON is recommended when using application/json." />
+                </div>
+            }
+
+            <!-- Action -->
+            <MudDivider />
+
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      AlignItems="AlignItems.Center"
+                      Spacing="2">
+
+                @if (_busy)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Sending request...
+                    </MudText>
+                }
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.Send"
+                           OnClick="SendAsync"
+                           Disabled="_busy">
+
+                    @if (_busy)
+                    {
+                        <MudProgressCircular Size="Size.Small"
+                                             Indeterminate="true"
+                                             Class="mr-2" />
+                        <span>Sending...</span>
+                    }
+                    else
+                    {
+                        <span>Send Request</span>
+                    }
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudStack>
+
+    </MudPaper>
+
+
+    <!-- Response -->
+    <MudPaper Class="pa-4 glass-panel" Elevation="0">
+
+        <MudStack Spacing="3">
+
+            <!-- Response header -->
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center">
+
+                <div>
+                    <MudText Typo="Typo.h6">Response</MudText>
+
+                    @if (_result is null)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            The response will appear here after the request is sent.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Upstream response received from the proxy.
+                        </MudText>
+                    }
+                </div>
+
+                @if (_result is not null)
+                {
+                    <MudChip T="string"
+                             Color="@(_result.IsSuccessStatusCode
+                                                         ? Color.Success
+                                                         : Color.Error)"
+                             Variant="Variant.Filled">
+
+                        @($"{_result.StatusCode} {_result.ReasonPhrase}")
+
+                    </MudChip>
+                }
+
+            </MudStack>
+
 
             @if (_result is null)
             {
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">No proxy call executed yet.</MudText>
+                <!-- Empty state -->
+                <MudPaper Class="pa-6"
+                          Outlined="true"
+                          Elevation="0">
+
+                    <MudStack AlignItems="AlignItems.Center"
+                              Spacing="2">
+
+                        <MudIcon Icon="@Icons.Material.Filled.Http"
+                                 Size="Size.Large"
+                                 Color="Color.Secondary" />
+
+                        <MudText Typo="Typo.body1">
+                            No response yet
+                        </MudText>
+
+                        <MudText Typo="Typo.body2"
+                                 Color="Color.Secondary">
+                            Configure your request above and select
+                            <strong>Send Request</strong>.
+                        </MudText>
+
+                    </MudStack>
+
+                </MudPaper>
             }
             else
             {
-                <MudStack Row="true" Spacing="1" Class="mb-2">
-                    <MudChip T="int" Color="@(_result.IsSuccessStatusCode ? Color.Success : Color.Error)">@_result.StatusCode</MudChip>
-                    <MudChip T="string" Variant="Variant.Outlined">@_result.ReasonPhrase</MudChip>
-                </MudStack>
+                <!-- Response metadata -->
+                <MudGrid Spacing="2">
 
-                <MudText Typo="Typo.subtitle2" Class="mb-1">Headers</MudText>
-                <div class="table-responsive">
-                <MudTable Items="_result.Headers" Dense="true" Elevation="0" Class="mb-3">
-                    <HeaderContent>
-                        <MudTh>Name</MudTh>
-                        <MudTh>Value</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>@context.Key</MudTd>
-                        <MudTd>@context.Value</MudTd>
-                    </RowTemplate>
-                </MudTable>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3"
+                                  Outlined="true"
+                                  Elevation="0">
+
+                            <MudText Typo="Typo.caption"
+                                     Color="Color.Secondary">
+                                Status
+                            </MudText>
+
+                            <MudText Typo="Typo.body1">
+                                @_result.StatusCode @_result.ReasonPhrase
+                            </MudText>
+
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="8">
+                        <MudPaper Class="pa-3"
+                                  Outlined="true"
+                                  Elevation="0">
+
+                            <MudText Typo="Typo.caption"
+                                     Color="Color.Secondary">
+                                Headers
+                            </MudText>
+
+                            <MudText Typo="Typo.body1">
+                                @_result.Headers.Count header(s)
+                            </MudText>
+
+                        </MudPaper>
+                    </MudItem>
+
+                </MudGrid>
+
+
+                <!-- Response headers -->
+                <MudExpansionPanels>
+
+                    <MudExpansionPanel Text="Response Headers"
+                                       Icon="@Icons.Material.Filled.List">
+
+                        @if (_result.Headers.Count == 0)
+                        {
+                            <MudText Typo="Typo.body2"
+                                     Color="Color.Secondary">
+                                No response headers returned.
+                            </MudText>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <MudTable Items="_result.Headers"
+                                          Dense="true"
+                                          Hover="true"
+                                          Elevation="0">
+
+                                    <HeaderContent>
+                                        <MudTh>Name</MudTh>
+                                        <MudTh>Value</MudTh>
+                                    </HeaderContent>
+
+                                    <RowTemplate>
+                                        <MudTd DataLabel="Name">
+                                            <MudText Typo="Typo.body2">
+                                                @context.Key
+                                            </MudText>
+                                        </MudTd>
+
+                                        <MudTd DataLabel="Value">
+                                            <MudText Typo="Typo.body2">
+                                                @context.Value
+                                            </MudText>
+                                        </MudTd>
+                                    </RowTemplate>
+
+                                </MudTable>
+
+                            </div>
+                        }
+
+                    </MudExpansionPanel>
+
+                </MudExpansionPanels>
+
+
+                <!-- Response body -->
+                <div>
+
+                    <MudText Typo="Typo.subtitle2"
+                             Class="mb-2">
+                        Response Body
+                    </MudText>
+
+                    <MudTextField T="string"
+                                  Value="_result.Body"
+                                  Variant="Variant.Outlined"
+                                  Lines="16"
+                                  ReadOnly="true"
+                                  FullWidth="true"
+                                  Class="response-body" />
+
                 </div>
 
-                <MudText Typo="Typo.subtitle2" Class="mb-1">Body</MudText>
-                <MudTextField Value="_result.Body" Variant="Variant.Outlined" Lines="12" ReadOnly="true" FullWidth="true" />
             }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
-</div>
+
+        </MudStack>
+
+    </MudPaper>
+
+</MudStack>
+
 
 @code {
-    private static readonly string[] _methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+
+    private static readonly string[] _methods =
+    [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS"
+    ];
 
     private readonly ProxyCallRequest _request = new();
+
     private ApiCallResult? _result;
+
+    private readonly List<HeaderEntry> _headers = [];
+
     private string _headersJson = "{}";
+
     private bool _busy;
+
+    private bool _headersError;
+
+    private string? _headersErrorText;
+
+
+    private bool HasRequestBody =>
+        _request.Method is "POST" or "PUT" or "PATCH";
+
 
     private async Task SendAsync()
     {
+        _headersError = false;
+        _headersErrorText = null;
+
         if (string.IsNullOrWhiteSpace(_request.TargetUrl))
         {
-            Snackbar.Add("Target URL is required.", Severity.Warning);
+            Snackbar.Add(
+                "Enter a target URL before sending the request.",
+                Severity.Warning);
+
             return;
         }
 
+        if (!Uri.TryCreate(
+                _request.TargetUrl,
+                UriKind.Absolute,
+                out var targetUri) ||
+            targetUri.Scheme is not ("http" or "https"))
+        {
+            Snackbar.Add(
+                "Enter a valid HTTP or HTTPS URL.",
+                Severity.Warning);
+
+            return;
+        }
+
+        _request.Headers = GetHeaders();
+
         _busy = true;
+
         try
         {
-            _request.Headers = ParseHeaders(_headersJson);
             _result = await Api.SendProxyRequestAsync(_request);
-            Snackbar.Add(_result.IsSuccessStatusCode ? "Proxy request completed." : _result.ErrorMessage ?? "Proxy request failed.", _result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+
+            if (_result.IsSuccessStatusCode)
+            {
+                Snackbar.Add(
+                    "Proxy request completed successfully.",
+                    Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(
+                    _result.ErrorMessage ??
+                    $"Request returned HTTP {_result.StatusCode}.",
+                    Severity.Error);
+            }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Proxy request failed: {ex.Message}", Severity.Error);
+            _result = null;
+
+            Snackbar.Add(
+                $"Proxy request failed: {ex.Message}",
+                Severity.Error);
         }
         finally
         {
@@ -102,25 +515,61 @@
         }
     }
 
-    private static Dictionary<string, string> ParseHeaders(string headersJson)
+
+    private static Dictionary<string, string> ParseHeaders(
+        string headersJson)
     {
         if (string.IsNullOrWhiteSpace(headersJson))
         {
             return [];
         }
 
-        using var document = JsonDocument.Parse(headersJson);
+        using var document =
+            JsonDocument.Parse(headersJson);
+
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            return [];
+            throw new JsonException(
+                "Headers must be a JSON object.");
         }
 
-        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var property in document.RootElement.EnumerateObject())
+        var headers =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in
+                 document.RootElement.EnumerateObject())
         {
-            headers[property.Name] = property.Value.ToString();
+            headers[property.Name] =
+                property.Value.ToString();
         }
 
         return headers;
+    }
+
+    private void AddHeader()
+    {
+        _headers.Add(new HeaderEntry());
+    }
+
+    private void RemoveHeader(HeaderEntry header)
+    {
+        _headers.Remove(header);
+    }
+
+    private Dictionary<string, string> GetHeaders()
+    {
+        return _headers
+            .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+            .ToDictionary(
+                x => x.Key.Trim(),
+                x => x.Value ?? string.Empty,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private sealed class HeaderEntry
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 }

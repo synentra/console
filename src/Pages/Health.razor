@@ -4,15 +4,54 @@
 
 <PageTitle>Health</PageTitle>
 
-<div class="page-shell">
-<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="page-header" Wrap="Wrap.Wrap">
-    <div>
-        <MudText Typo="Typo.h4" Class="fw-semibold page-title">Gateway Health</MudText>
-        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary page-subtitle">Live liveness/readiness status from <code>/health</code>.</MudText>
-    </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Refresh" OnClick="LoadHealthAsync" Disabled="_busy">
-        @(_busy ? "Refreshing..." : "Refresh")
+<HeaderTitle Title="Synentra Health"
+             Description="Live liveness/readiness status from health."
+             Icon="@Icons.Material.Filled.MonitorHeart"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
+
+<!-- Toolbar -->
+<MudStack Row="true"
+          AlignItems="AlignItems.Center"
+          Justify="Justify.SpaceBetween"
+          Class="page-header mb-4"
+          Wrap="Wrap.Wrap">
+
+    <MudStack Row="true"
+              AlignItems="AlignItems.Center"
+              Spacing="1">
+
+        <MudIcon Icon="@Icons.Material.Filled.Circle"
+                 Size="Size.Small"
+                 Color="@GetStatusColor()" />
+
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Last checked:
+            <strong>@GetLastCheckedText()</strong>
+        </MudText>
+
+    </MudStack>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Rounded.Refresh"
+               OnClick="LoadHealthAsync"
+               Disabled="_busy">
+
+        @if (_busy)
+        {
+            <MudProgressCircular Size="Size.Small"
+                                 Indeterminate="true"
+                                 Class="me-2" />
+            <span>Refreshing</span>
+        }
+        else
+        {
+            <span>Refresh</span>
+        }
+
     </MudButton>
+
 </MudStack>
 
 <MudPaper Class="pa-4 glass-panel" Elevation="0">
@@ -36,11 +75,11 @@
         </MudGrid>
     }
 </MudPaper>
-</div>
 
 @code {
     private HealthResponse? _health;
     private bool _busy;
+    private DateTimeOffset? _lastChecked;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,6 +92,7 @@
         try
         {
             _health = await Api.GetHealthAsync();
+            _lastChecked = DateTimeOffset.Now;
             if (_health is null)
             {
                 Snackbar.Add("Health endpoint did not return a valid payload.", Severity.Warning);
@@ -60,11 +100,29 @@
         }
         catch (Exception ex)
         {
+            _lastChecked = DateTimeOffset.Now;
             Snackbar.Add($"Health request failed: {ex.Message}", Severity.Error);
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private Color GetStatusColor()
+    {
+        if (_health?.Status is null)
+            return Color.Default;
+
+        return _health.Status.Equals(
+            "Healthy",
+            StringComparison.OrdinalIgnoreCase)
+            ? Color.Success
+            : Color.Error;
+    }
+
+    private string GetLastCheckedText()
+    {
+        return _lastChecked?.ToLocalTime().ToString("HH:mm:ss") ?? "Never";
     }
 }

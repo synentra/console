@@ -1,0 +1,125 @@
+@page "/hitl"
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+@inject IDialogService DialogService
+
+<PageTitle>HITL</PageTitle>
+
+<HeaderTitle Title="Human-in-the-Loop (HITL) Queue"
+             Description="Review pending high-risk requests and approve or deny with operator comments."
+             Icon="@Icons.Material.Filled.VerifiedUser"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
+
+<MudTable T="HitlPendingItem"
+          ServerData="LoadData"
+          Dense="true"
+          Hover="true"
+          Bordered="false"
+          Striped="false"
+          @ref="_table" LoadingProgressColor="Color.Primary">
+    <ToolBarContent>
+        <MudFab Color="Color.Surface"
+                Size="@Size.Small"
+                StartIcon="@Icons.Material.Filled.Refresh"
+                class="ml-2"
+                Label="Refresh"
+                OnClick="Refresh" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Method</MudTh>
+        <MudTh>Target</MudTh>
+        <MudTh>Reason</MudTh>
+        <MudTh>Expires</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ID">@context.Id</MudTd>
+        <MudTd DataLabel="Method"><MudChip T="string" Variant="Variant.Outlined" Size="Size.Small">@context.Method</MudChip></MudTd>
+        <MudTd DataLabel="Target">@context.Url</MudTd>
+        <MudTd DataLabel="Reason">@context.Reason</MudTd>
+        <MudTd DataLabel="Expires">@context.ExpiresAt.LocalDateTime.ToString("g")</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudStack Row="true" Spacing="0">
+                <MudIconButton Icon="@Icons.Material.Filled.FactCheck" Color="Color.Info" Size="Size.Small" OnClick="@(() => HitlDetailsAsync(context))" />
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private readonly List<HitlStatusResponse> _pending = new();
+    private string _requestId = string.Empty;
+
+    private MudTable<HitlPendingItem>? _table;
+
+    private async Task<TableData<HitlPendingItem>> LoadData(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await Api.GetPendingHitlAsync(state.Page + 1, state.PageSize);
+
+            if (response is null)
+            {
+                SnackBar.Add("Failed to load HITL queue: No response received.", Severity.Error);
+                return new TableData<HitlPendingItem> { Items = [], TotalItems = 0 };
+            }
+
+            var totalCount = response.TotalCount;
+
+            return new TableData<HitlPendingItem>
+            {
+                Items = response.Items,
+                TotalItems = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Exception occurred: {ex.Message}", Severity.Error);
+            return new TableData<HitlPendingItem>
+            {
+                Items = [],
+                TotalItems = 0
+            };
+        }
+    }
+
+    private async Task Refresh()
+    {
+        if (_table != null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task HitlDetailsAsync(HitlPendingItem hitl)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {
+            { "Id", hitl.Id },
+        };
+
+        var dialog = await DialogService.ShowAsync<DetailsHitlDialog>("HITL Details", parameters, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult != null && !dialogResult.Canceled)
+           await Refresh();
+    }
+}

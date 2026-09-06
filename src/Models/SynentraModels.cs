@@ -75,9 +75,11 @@ public sealed class HealthResponse
 
 public sealed class HitlPendingItem
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Method { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
+    public Dictionary<string, string> Headers { get; set; } = new();
+    public string? Body { get; set; }
     public string Reason { get; set; } = string.Empty;
     public Guid AgentId { get; set; }
     public DateTimeOffset Timestamp { get; set; }
@@ -86,17 +88,17 @@ public sealed class HitlPendingItem
 
 public sealed class HitlStatusResponse
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Status { get; set; } = string.Empty;
     public HitlRequestDetails? Request { get; set; }
 }
 
 public sealed class HitlRequestDetails
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Method { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
-    public Dictionary<string, string> Headers { get; set; } = [];
+    public Dictionary<string, string> Headers { get; set; } = new();
     public string? Body { get; set; }
     public string Reason { get; set; } = string.Empty;
     public Guid AgentId { get; set; }
@@ -130,11 +132,13 @@ public sealed class ApiCallResult
 
 public sealed class AuditEntry
 {
-    public string Id { get; set; } = string.Empty;
-    public string AgentId { get; set; } = string.Empty;
+    public long Id { get; set; }
+    public Guid AgentId { get; set; }
     public string Action { get; set; } = string.Empty;
-    public string Method { get; set; } = string.Empty;
-    public string Url { get; set; } = string.Empty;
-    public string Decision { get; set; } = string.Empty;
+    public string TargetUrl { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public double? RiskScore { get; set; }
+    public string? Intent { get; set; }
+    public string? Reason { get; set; }
     public DateTimeOffset? Timestamp { get; set; }
 }

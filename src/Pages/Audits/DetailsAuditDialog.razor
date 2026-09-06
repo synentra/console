@@ -1,0 +1,180 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">Audit Entry Details</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            View the details of the audit entry in the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.Id"
+                                      Label="Audit Entry ID"
+                                      Placeholder="e.g. 1008"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="ID of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.Timestamp"
+                                      Label="Timestamp"
+                                      Placeholder="e.g. 2024-06-01T12:34:56"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Timestamp of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="AuditEntry.AgentId"
+                                      Label="Agent ID"
+                                      Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="ID of the agent" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.Action"
+                                      Label="Action"
+                                      Placeholder="e.g. Approve"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Action performed in the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.TargetUrl"
+                                      Label="Target URL"
+                                      Placeholder="e.g. https://example.com"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Target URL of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.Status"
+                                      Label="Status"
+                                      Placeholder="e.g. Active"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Status of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="AuditEntry.RiskScore"
+                                      Label="Risk Score"
+                                      Placeholder="e.g. 0.85"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Risk score of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="AuditEntry.Intent"
+                                      Label="Intent"
+                                      Placeholder="e.g. Approve"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      Lines="4"
+                                      HelperText="Intent of the audit entry" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="AuditEntry.Reason"
+                                      Label="Reason"
+                                      Placeholder="e.g. Approve"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Reason of the audit entry" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public AuditEntry AuditEntry { get; set; } = default!;
+
+    private bool IsProcessing = false;
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+}
