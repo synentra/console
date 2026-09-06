@@ -1,0 +1,121 @@
+@page "/audits"
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+@inject IDialogService DialogService
+
+<PageTitle>Audits</PageTitle>
+
+<HeaderTitle Title="Managing audits"
+             Description="This section enumerates all audit entries currently recorded within the Synentra system."
+             Icon="@Icons.Material.Filled.FactCheck"
+             IconColor="Color.Primary"
+             IconSize="Size.Large" />
+
+<MudTable T="AuditEntry"
+          ServerData="LoadData"
+          Dense="true"
+          Hover="true"
+          Bordered="false"
+          Striped="false"
+          @ref="_table" LoadingProgressColor="Color.Primary">
+    <ToolBarContent>
+        <MudFab Color="Color.Surface"
+                Size="@Size.Small"
+                StartIcon="@Icons.Material.Filled.Refresh"
+                class="ml-2"
+                Label="Refresh"
+                OnClick="Refresh" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Agent</MudTh>
+        <MudTh>Action</MudTh>
+        <MudTh>Decision</MudTh>
+        <MudTh>Timestamp</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ID">@context.Id</MudTd>
+        <MudTd DataLabel="Agent">@context.AgentId</MudTd>
+        <MudTd DataLabel="Action">@context.Action</MudTd>
+        <MudTd DataLabel="Status">@context.Status</MudTd>
+        <MudTd DataLabel="Timestamp">@context.Timestamp?.LocalDateTime.ToString("g")</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudStack Row="true" Spacing="0">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => AuditDetailsAsync(context))" />
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private bool _busy;
+
+    private MudTable<AuditEntry>? _table;
+
+    private async Task<TableData<AuditEntry>> LoadData(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await Api.GetAuditAsync(state.Page + 1, state.PageSize);
+
+            if (response is null)
+            {
+                SnackBar.Add("Failed to load audit entries: No response received.", Severity.Error);
+                return new TableData<AuditEntry> { Items = [], TotalItems = 0 };
+            }
+
+            var totalCount = response.TotalCount;
+
+            return new TableData<AuditEntry>
+            {
+                Items = response.Items,
+                TotalItems = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Exception occurred: {ex.Message}", Severity.Error);
+            return new TableData<AuditEntry>
+            {
+                Items = [],
+                TotalItems = 0
+            };
+        }
+    }
+
+    private async Task Refresh()
+    {
+        if (_table != null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task AuditDetailsAsync(AuditEntry auditEntry)
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            BackgroundClass = "blur-dialog-background"
+        };
+
+        var parameters = new DialogParameters {
+            { "AuditEntry", auditEntry },
+        };
+
+        await DialogService.ShowAsync<DetailsAuditDialog>("Audit Details", parameters, options);
+    }
+}

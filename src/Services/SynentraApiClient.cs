@@ -24,11 +24,11 @@ public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
     public Task<PolicyDetails?> GetPolicyAsync(string name) =>
         GetFromJsonAsync<PolicyDetails>($"policies/{Uri.EscapeDataString(name)}");
 
-    public Task<List<HitlPendingItem>?> GetPendingHitlAsync() =>
-        GetFromJsonAsync<List<HitlPendingItem>>("hitl");
+    public Task<PagedResult<HitlPendingItem>?> GetPendingHitlAsync(int page, int pageSize) =>
+        GetFromJsonAsync<PagedResult<HitlPendingItem>>($"hitls?page={page}&pageSize={pageSize}");
 
-    public Task<HitlStatusResponse?> GetHitlStatusAsync(string id) =>
-        GetFromJsonAsync<HitlStatusResponse>($"hitl/status/{Uri.EscapeDataString(id)}");
+    public Task<HitlStatusResponse?> GetHitlStatusAsync(Guid hitlId) =>
+        GetFromJsonAsync<HitlStatusResponse>($"hitls/{hitlId}");
 
     public Task<ApiCallResult> RegisterAgentAsync(RegisterAgentRequest request) =>
         SendJsonAsync(HttpMethod.Post, "agents", request, false);
@@ -67,11 +67,11 @@ public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
         return await JsonSerializer.DeserializeAsync<HealthResponse>(stream, JsonOptions);
     }
 
-    public Task<ApiCallResult> ApproveHitlAsync(string id, HitlDecisionRequest request) =>
-        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/approve", request, false);
+    public Task<ApiCallResult> ApproveHitlAsync(Guid id, HitlDecisionRequest request) =>
+        SendJsonAsync(HttpMethod.Post, $"hitls/{id}/approve", request, false);
 
-    public Task<ApiCallResult> DenyHitlAsync(string id, HitlDecisionRequest request) =>
-        SendJsonAsync(HttpMethod.Post, $"hitl/{Uri.EscapeDataString(id)}/deny", request, false);
+    public Task<ApiCallResult> DenyHitlAsync(Guid id, HitlDecisionRequest request) =>
+        SendJsonAsync(HttpMethod.Post, $"hitls/{id}/deny", request, false);
 
     public Task<ApiCallResult> GetAuditByIdAsync(string id) =>
         SendJsonAsync(HttpMethod.Get, $"Audit/{Uri.EscapeDataString(id)}", null, false);

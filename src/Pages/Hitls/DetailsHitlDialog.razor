@@ -1,0 +1,241 @@
+﻿@using MudBlazor
+
+@inject SynentraApiClient Api
+@inject ISnackbar SnackBar
+
+<MudDialog MaxWidth="MaxWidth.Small"
+           FullWidth="true"
+           DisableBackdropClick="@IsProcessing"
+           CloseOnEscapeKey="false">
+
+    <TitleContent>
+        <MudText Typo="Typo.h6">HITL Details</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            View the details of the pending HITL in the system
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudCard Elevation="0" Class="rounded-xl">
+
+            <!-- Body -->
+            <MudCardContent Class="pt-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField Value="HitlStatusResponse?.Id"
+                                      Label="ID"
+                                      Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="ID of the HITL" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField Value="HitlStatusResponse?.Status"
+                                      Label="Status"
+                                      Placeholder="e.g. Pending"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Status of the HITL" />
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudTextField Value="HitlStatusResponse?.Request?.Method"
+                                      Label="Method"
+                                      Placeholder="e.g. POST"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Method of the HITL request" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField Value="HitlStatusResponse?.Request?.Url"
+                                      Label="URL"
+                                      Placeholder="e.g. https://example.com"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="URL of the HITL request" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField Value="HitlStatusResponse?.Request?.Reason"
+                                      Label="Reason"
+                                      Placeholder="e.g. DefaultPolicy"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      Lines="4"
+                                      HelperText="Reason of the HITL request" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField Value="HitlStatusResponse?.Request?.AgentId"
+                                      Label="Agent ID"
+                                      Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="true"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Agent ID of the HITL request" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField Value="_comment"
+                                      Label="Comment"
+                                      Placeholder="Enter your comment"
+                                      Variant="Variant.Filled"
+                                      Margin="Margin.Dense"
+                                      ReadOnly="@(!(HitlStatusResponse?.Status == "Pending"))"
+                                      Disabled="@IsProcessing"
+                                      Clearable="true"
+                                      HelperText="Comment for the HITL request" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+
+            <!-- Footer -->
+            <MudDivider />
+
+            <MudCardActions Class="pa-4 d-flex justify-end gap-2">
+
+                @if (HitlStatusResponse?.Status == "Pending")
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               Disabled="@IsProcessing"
+                               OnClick="Approve">
+                        Approve
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               Disabled="@IsProcessing"
+                               OnClick="Deny">
+                        Deny
+                    </MudButton>
+                }
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           Disabled="@IsProcessing"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+            </MudCardActions>
+
+        </MudCard>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public Guid Id { get; set; } = default!;
+
+    private HitlStatusResponse? HitlStatusResponse;
+    private string _comment = string.Empty;
+    private bool IsProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDetails();
+    }
+
+    private async Task GetDetails()
+    {
+        try
+        {
+            IsProcessing = true;
+
+            HitlStatusResponse = await Api.GetHitlStatusAsync(Id);
+            if (HitlStatusResponse is null)
+            {
+                SnackBar.Add("Server error while processing the request.", Severity.Error);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task Approve()
+    {
+        if (Id == Guid.Empty)
+        {
+            SnackBar.Add("Enter a request ID.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            IsProcessing = true;
+            var result = await Api.ApproveHitlAsync(Id, new HitlDecisionRequest { Comment = _comment });
+            SnackBar.Add(result.IsSuccessStatusCode ? "Request approved." : result.ErrorMessage ?? "Approve failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task Deny()
+    {
+        if (Id == Guid.Empty)
+        {
+            SnackBar.Add("Enter a request ID.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            IsProcessing = true;
+            var result = await Api.DenyHitlAsync(Id, new HitlDecisionRequest { Comment = _comment });
+            SnackBar.Add(result.IsSuccessStatusCode ? "Request denied." : result.ErrorMessage ?? "Deny failed.", result.IsSuccessStatusCode ? Severity.Success : Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void BackdropHandler(MouseEventArgs e)
+    {
+        if (!IsProcessing)
+            MudDialog.Cancel();
+    }
+
+    private void KeyHandler(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !IsProcessing)
+            MudDialog.Cancel();
+    }
+}
