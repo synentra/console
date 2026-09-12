@@ -1,0 +1,28 @@
+ARG BUILD_CONFIGURATION=Release
+ARG APP_VERSION="1.0.0"
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG BUILD_CONFIGURATION
+ARG APP_VERSION
+
+WORKDIR /code
+
+COPY ["src/Console.csproj", "src/"]
+
+RUN dotnet restore "./src/Console.csproj"
+
+COPY . .
+WORKDIR "/code/src"
+RUN dotnet build "./Console.csproj" -c ${BUILD_CONFIGURATION} -o /app/build --no-restore
+
+FROM build AS publish
+ARG BUILD_CONFIGURATION
+ARG APP_VERSION
+RUN dotnet publish "./Console.csproj" -c ${BUILD_CONFIGURATION} -o /app/publish /p:UseAppHost=false /p:Version=${APP_VERSION} --runtime "linux-x64"
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+USER app
+WORKDIR /app
+EXPOSE 6264
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "console.dll"]
