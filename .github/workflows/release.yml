@@ -1,4 +1,4 @@
-name: Synentra Release
+name: Synentra Console Release
 
 on:
   workflow_dispatch:
