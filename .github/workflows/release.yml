@@ -1,0 +1,72 @@
+name: Synentra Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      rel_version:
+        description: 'Release version (examples: 1.9.0-rc.1, 1.9.1)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.event.inputs.rel_version }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sanitize_inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      RELEASE_VERSION: ${{ steps.set_version.outputs.RELEASE_VERSION }}
+    steps:
+      - name: Sanitize release version
+        id: set_version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.rel_version }}
+        run: |
+          # Keep only alphanumeric, dots, hyphens, underscores
+          SAFE_VERSION=$(echo "$INPUT_VERSION" | tr -cd '[:alnum:]._-')
+          echo "RELEASE_VERSION=$SAFE_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$SAFE_VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    needs: sanitize_inputs
+    uses: ./.github/workflows/_build-binaries.yml
+    with:
+      release_version: ${{ needs.sanitize_inputs.outputs.RELEASE_VERSION }}
+
+  release:
+    needs: [sanitize_inputs, build]
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_github-release.yml
+    with:
+      release_version: ${{ needs.sanitize_inputs.outputs.RELEASE_VERSION }}
+      sha: ${{ github.sha }}
+    secrets: inherit
+
+  docker-linux:
+    needs: [sanitize_inputs, release]
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_docker-linux.yml
+    with:
+      release_version: ${{ needs.sanitize_inputs.outputs.RELEASE_VERSION }}
+      registry: ghcr.io
+      image_name: ${{ github.repository }}
+    secrets: inherit
+
+  docker-manifest:
+    needs: [sanitize_inputs, docker-linux]
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_docker-manifest.yml
+    with:
+      release_version: ${{ needs.sanitize_inputs.outputs.RELEASE_VERSION }}
+      registry: ghcr.io
+      image_name: ${{ github.repository }}
+    secrets: inherit
