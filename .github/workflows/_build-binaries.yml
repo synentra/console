@@ -59,7 +59,7 @@ jobs:
       - name: Publish
         run: |
           release_name="synentra-${{ matrix.title }}-${{ matrix.os_arch }}"
-          dotnet publish src/Synentra/Synentra.csproj \
+          dotnet publish src/Console.csproj \
             -p:PublishSingleFile=true \
             -p:PublishReadyToRun=true \
             --runtime "${{ matrix.kind }}-${{ matrix.os_arch }}" \
