@@ -5,8 +5,10 @@ using Console.Models;
 
 namespace Console.Services;
 
-public sealed class SynentraApiClient(HttpClient httpClient, ConsoleState state)
+public sealed class SynentraApiClient(IHttpClientFactory httpClientFactory, ConsoleState state)
 {
+    private readonly HttpClient httpClient = httpClientFactory.CreateClient();
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true

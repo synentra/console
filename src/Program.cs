@@ -1,20 +1,60 @@
-using Blazored.LocalStorage;
 using Console;
-using Console.Preferences;
-using Console.Services;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using MudBlazor.Services;
+using Console.Extensions;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddMudServices();
-builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddScoped<IPreferenceManager, PreferenceManager>();
-builder.Services.AddScoped<ConsoleState>();
-builder.Services.AddScoped<SynentraApiClient>();
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile(
+        "appsettings.json",
+        optional: true,
+        reloadOnChange: true)
+    .AddJsonFile(
+        $"appsettings.{builder.Environment.EnvironmentName}.json",
+        optional: true,
+        reloadOnChange: true)
+    .AddUserSecrets<Program>(optional: true)
+    .AddEnvironmentVariables()
+    .AddCommandLine(args);
 
-await builder.Build().RunAsync();
+var customConfigPath = builder.Configuration["config"];
+
+if (!string.IsNullOrEmpty(customConfigPath))
+{
+    builder.Configuration.Sources.Clear();
+
+    builder.Configuration.AddJsonFile(
+        customConfigPath,
+        optional: false,
+        reloadOnChange: false);
+}
+
+builder.ConfigureHttpServer();
+
+builder.Services
+    .AddConsoleServices()
+    .AddMudBlazor();
+
+builder.Services
+    .AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseHttps();
+
+app.UseAntiforgery();
+
+app.UseStaticFiles();
+app.MapStaticAssets();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();

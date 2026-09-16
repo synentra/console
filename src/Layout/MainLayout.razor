@@ -60,6 +60,7 @@
             _isDarkMode = await PreferenceManager.IsDarkTheme();
             _drawerOpen = await PreferenceManager.IsDrawerOpenAsync();
             _initialized = true;
+            await JS.InvokeVoidAsync("synentraLoader.dismiss");
             StateHasChanged();
         }
     }
